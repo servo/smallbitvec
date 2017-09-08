@@ -1,0 +1,6 @@
+[package]
+name = "smallbitvec"
+version = "0.1.0"
+authors = ["Matt Brubeck <mbrubeck@limpet.net>"]
+
+[dependencies]
