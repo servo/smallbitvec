@@ -25,12 +25,13 @@ fn inline_capacity() -> u32 {
 
 /// The rightmost non-zero bit in an inline vector of length `len`.
 fn inline_sentinel(len: u32) -> usize {
-    debug_assert!(len < inline_capacity());
+    debug_assert!(len <= inline_capacity());
     1 << (inline_bits() - 1 - len)
 }
 
 /// The position of the nth bit of storage in an inline vector.
 fn inline_index(n: u32) -> usize {
+    debug_assert!(n <= inline_capacity());
     // The storage starts at the leftmost bit.
     1 << (inline_bits() - n)
 }
@@ -48,10 +49,29 @@ struct Header {
     buffer_len: u32,
 }
 
+
 /// The allocation will contain a `Header` followed by a [u32] buffer.
 type Storage = u32;
 
 const BITS_PER_ELEM: u32 = 32;
+
+impl Header {
+    /// Create a heap allocation with enough space for a header,
+    /// plus a buffer of at least `cap` bits.
+    fn with_capacity(cap: u32) -> *mut Header {
+        let header_len = size_of::<Header>() as u32 / BITS_PER_ELEM;
+        let buffer_len = (cap + BITS_PER_ELEM - 1) / BITS_PER_ELEM;
+
+        let v: Vec<Storage> = vec![0; header_len as usize + buffer_len as usize];
+        
+        let header_ptr = Box::into_raw(v.into_boxed_slice()) as *mut Header;
+        unsafe {
+            (*header_ptr).buffer_len = buffer_len;
+        }
+        header_ptr
+    }
+}
+
 
 impl SmallBitVec {
     // Create an empty vector.
@@ -69,15 +89,7 @@ impl SmallBitVec {
         }
 
         // Otherwise, allocate on the heap.
-        let header_len = size_of::<Header>() as u32 / BITS_PER_ELEM;
-        let buffer_len = (cap + BITS_PER_ELEM - 1) / BITS_PER_ELEM;
-        let v: Vec<Storage> = vec![0; header_len as usize + buffer_len as usize];
-
-        let header_ptr = Box::into_raw(v.into_boxed_slice()) as *mut Header;
-        unsafe {
-            (*header_ptr).buffer_len = buffer_len;
-        }
-        
+        let header_ptr = Header::with_capacity(cap);
         SmallBitVec {
             data: (header_ptr as usize) | HEAP_FLAG
         }
@@ -139,10 +151,26 @@ impl SmallBitVec {
             let i = (n / BITS_PER_ELEM) as usize;
             let offset = n % BITS_PER_ELEM;
             if val {
-                buffer[i] |= (1 << offset);
+                buffer[i] |= 1 << offset;
             } else {
                 buffer[i] &= !(1 << offset);
             }
+        }
+    }
+
+    /// Set the length of the vector. The length must not exceed the capacity.
+    ///
+    /// If this makes the vector longer, then the values of its new elements
+    /// are not specified.
+    unsafe fn set_len(&mut self, len: u32) {
+        debug_assert!(len <= self.capacity());
+        if self.is_inline() {
+            let sentinel = inline_sentinel(len);
+            let mask = !(sentinel - 1);
+            self.data |= sentinel;
+            self.data &= mask;
+        } else {
+            self.header_mut().len = len;
         }
     }
 
@@ -216,18 +244,41 @@ mod tests {
     }
 
     #[test]
-    fn with_capacity() {
+    fn with_capacity_inline() {
         for cap in 0..(inline_capacity() + 1) {
             let v = SmallBitVec::with_capacity(cap);
             assert_eq!(v.len(), 0);
             assert_eq!(v.capacity(), inline_capacity());
             assert!(v.is_inline());
         }
+    }
 
+    #[test]
+    fn with_capacity_heap() {
         let cap = inline_capacity() + 1;
         let v = SmallBitVec::with_capacity(cap);
         assert_eq!(v.len(), 0);
         assert!(v.capacity() > inline_capacity());
         assert!(v.is_heap());
+    }
+
+    #[test]
+    fn set_len_inline() {
+        let mut v = SmallBitVec::new();
+        for i in 0..(inline_capacity() + 1) {
+            unsafe { v.set_len(i); }
+            assert_eq!(v.len(), i);
+        }
+        for i in (0..(inline_capacity() + 1)).rev() {
+            unsafe { v.set_len(i); }
+            assert_eq!(v.len(), i);
+        }
+    }
+
+    #[test]
+    fn set_len_heap() {
+        let mut v = SmallBitVec::with_capacity(500);
+        unsafe { v.set_len(30); }
+        assert_eq!(v.len(), 30);
     }
 }
