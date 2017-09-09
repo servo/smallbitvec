@@ -249,6 +249,11 @@ impl SmallBitVec {
         }
     }
 
+    /// Returns an iterator that yields the bits of the vector in order, as `bool` values.
+    pub fn iter(&self) -> Iter {
+        Iter { idx: 0, vec: self }
+    }
+
     /// Returns true if all the bits in the vec are set to zero/false.
     pub fn all_false(&self) -> bool {
         let mut len = self.len();
@@ -411,6 +416,23 @@ impl Clone for SmallBitVec {
     }
 }
 
+pub struct Iter<'a> {
+    vec: &'a SmallBitVec,
+    idx: u32,
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = bool;
+    fn next(&mut self) -> Option<bool> {
+        if self.idx >= self.vec.len() {
+            return None
+        }
+        let result = self.vec.get(self.idx);
+        self.idx += 1;
+        Some(result)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -528,5 +550,19 @@ mod tests {
             v2.push(false);
             assert!(!v2.all_true());
         }
+    }
+
+    #[test]
+    fn iter() {
+        let mut v = SmallBitVec::new();
+        v.push(true);
+        v.push(false);
+        v.push(false);
+
+        let mut i = v.iter();
+        assert_eq!(i.next(), Some(true));
+        assert_eq!(i.next(), Some(false));
+        assert_eq!(i.next(), Some(false));
+        assert_eq!(i.next(), None);
     }
 }
