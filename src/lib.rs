@@ -108,7 +108,7 @@ impl SmallBitVec {
     #[inline]
     pub fn len(&self) -> u32 {
         if self.is_inline() {
-            // The rightmost nonzero bit is a sentinal.  All bits to the left of
+            // The rightmost nonzero bit is a sentinel.  All bits to the left of
             // the sentinel bit are the elements of the bit vector.
             inline_bits() - self.data.trailing_zeros() - 1
         } else {
@@ -116,7 +116,7 @@ impl SmallBitVec {
         }
     }
 
-    /// Returns `true` if this vector contains zero bits.
+    /// Returns `true` if this vector contains no bits.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -148,6 +148,8 @@ impl SmallBitVec {
     }
 
     /// Set the nth bit in this bit vector to `val`.
+    ///
+    /// FIXME: Bounds checking.
     pub fn set(&mut self, n: u32, val: bool) {
         if self.is_inline() {
             if val {
