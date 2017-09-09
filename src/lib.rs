@@ -422,6 +422,15 @@ impl fmt::Debug for SmallBitVec {
     }
 }
 
+impl PartialEq for SmallBitVec {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        Iterator::eq(self.iter(), other.iter())
+    }
+}
+
+impl Eq for SmallBitVec {}
+
 impl Clone for SmallBitVec {
     fn clone(&self) -> Self {
         if self.is_inline() {
