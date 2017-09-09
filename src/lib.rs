@@ -1,3 +1,11 @@
+//! [`SmallBitVec`] is a bit vector, a vector of single-bit values stored compactly in memory.
+//!
+//! SmallBitVec grows dynamically, like the standard `Vec<T>` type.  It can hold up to about one
+//! word of bits inline (without a separate heap allocation).  If the number of bits exceeds this
+//! inline capacity, it will allocate a buffer on the heap.
+//!
+//! [`SmallBitVec`]: struct.SmallBitVec.html
+
 use std::cmp::max;
 use std::fmt;
 use std::hash;
@@ -5,11 +13,10 @@ use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
 use std::slice;
 
-/// A bit vector that can store small values inline.
+/// A resizable bit vector, optimized for size and inline storage.
 ///
-/// `SmallBitVec` is exactly one word wide. If the rightmost bit is set, this word
-/// stores a pointer to a heap allocation.  Otherwise, the data is stored inline
-/// in the other bits.
+/// `SmallBitVec` is exactly one word wide. Depending on the required capacity, this word
+/// either stores the bits inline, or it stores a pointer to a separate buffer on the heap.
 pub struct SmallBitVec {
     data: usize,
 }
@@ -147,7 +154,7 @@ impl SmallBitVec {
         }
     }
 
-    /// Get the nth bit in this bit vector.
+    /// Get the nth bit in this bit vector.  Panics if the index is out of bounds.
     #[inline]
     pub fn get(&self, n: u32) -> bool {
         assert!(n < self.len(), "Index {} out of bounds", n);
@@ -162,7 +169,7 @@ impl SmallBitVec {
         }
     }
 
-    /// Set the nth bit in this bit vector to `val`.
+    /// Set the nth bit in this bit vector to `val`.  Panics if the index is out of bounds.
     pub fn set(&mut self, n: u32, val: bool) {
         assert!(n < self.len(), "Index {} out of bounds", n);
 
@@ -230,8 +237,10 @@ impl SmallBitVec {
     }
 
     /// Remove the bit at index `idx`, shifting all later bits toward the front.
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, idx: u32) {
-        assert!(idx < self.len(), "index out of bounds");
+        assert!(idx < self.len(), "Index {} out of bounds", idx);
 
         for i in (idx+1)..self.len() {
             let next_val = self.get(i);
