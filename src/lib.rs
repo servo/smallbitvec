@@ -1,4 +1,5 @@
-use std::mem::size_of;
+use std::cmp::max;
+use std::mem::{forget, replace, size_of};
 use std::slice;
 
 /// A bit vector that can store small values inline.
@@ -23,61 +24,69 @@ fn inline_capacity() -> u32 {
     inline_bits() - 2
 }
 
-/// The rightmost non-zero bit in an inline vector of length `len`.
-fn inline_sentinel(len: u32) -> usize {
-    debug_assert!(len <= inline_capacity());
-    1 << (inline_bits() - 1 - len)
-}
-
 /// The position of the nth bit of storage in an inline vector.
 fn inline_index(n: u32) -> usize {
     debug_assert!(n <= inline_capacity());
     // The storage starts at the leftmost bit.
-    1 << (inline_bits() - n)
+    1 << (inline_bits() - 1 - n)
 }
 
 /// If the rightmost bit of `data` is set, then the remaining bits of `data`
 /// are a pointer to a heap allocation.
 const HEAP_FLAG: usize = 1;
 
-/// Data stored at the start of the heap allocation.
-struct Header {
-    /// The number of bits in this bit vector.
-    len: u32,
-
-    /// The number of elements in the [u32] buffer that follows this header.
-    buffer_len: u32,
-}
-
-
-/// The allocation will contain a `Header` followed by a [u32] buffer.
+/// The allocation will contain a `Header` followed by a [Storage] buffer.
 type Storage = u32;
 
-const BITS_PER_ELEM: u32 = 32;
+/// The number of bits in one `Storage`.
+fn bits_per_storage() -> u32 {
+    size_of::<Storage>() as u32 * 8
+}
+
+/// Data stored at the start of the heap allocation.
+///
+/// `Header` must have the same alignment as `Storage`.
+struct Header {
+    /// The number of bits in this bit vector.
+    len: Storage,
+
+    /// The number of elements in the [u32] buffer that follows this header.
+    buffer_len: Storage,
+}
 
 impl Header {
     /// Create a heap allocation with enough space for a header,
     /// plus a buffer of at least `cap` bits.
     fn with_capacity(cap: u32) -> *mut Header {
-        let header_len = size_of::<Header>() as u32 / BITS_PER_ELEM;
-        let buffer_len = (cap + BITS_PER_ELEM - 1) / BITS_PER_ELEM;
+        let buffer_len = buffer_len(cap);
+        let alloc_len = header_len() + buffer_len;
 
-        let v: Vec<Storage> = vec![0; header_len as usize + buffer_len as usize];
-        
-        let header_ptr = Box::into_raw(v.into_boxed_slice()) as *mut Header;
+        let v: Vec<Storage> = vec![0; alloc_len];
+        let header_ptr = v.as_ptr() as *mut Header;
+        forget(v);
+
         unsafe {
-            (*header_ptr).buffer_len = buffer_len;
+            (*header_ptr).buffer_len = buffer_len as u32;
         }
         header_ptr
     }
 }
 
+/// The number of `Storage` elements to allocate to hold a header.
+fn header_len() -> usize {
+    size_of::<Header>() / size_of::<Storage>()
+}
+
+/// The minimum number of `Storage` elements to hold at least `cap` bits.
+fn buffer_len(cap: u32) -> usize {
+    ((cap + bits_per_storage() - 1) / bits_per_storage()) as usize
+}
 
 impl SmallBitVec {
     // Create an empty vector.
     pub fn new() -> SmallBitVec {
         SmallBitVec {
-            data: inline_sentinel(0)
+            data: inline_index(0)
         }
     }
 
@@ -119,7 +128,7 @@ impl SmallBitVec {
         if self.is_inline() {
             inline_capacity()
         } else {
-            self.header().buffer_len * BITS_PER_ELEM
+            self.header().buffer_len * bits_per_storage()
         }
     }
 
@@ -132,8 +141,8 @@ impl SmallBitVec {
             self.data & inline_index(n) != 0
         } else {
             let buffer = self.buffer();
-            let i = (n / BITS_PER_ELEM) as usize;
-            let offset = n % BITS_PER_ELEM;
+            let i = (n / bits_per_storage()) as usize;
+            let offset = n % bits_per_storage();
             buffer[i] & (1 << offset) != 0
         }
     }
@@ -148,14 +157,51 @@ impl SmallBitVec {
             }
         } else {
             let buffer = self.buffer_mut();
-            let i = (n / BITS_PER_ELEM) as usize;
-            let offset = n % BITS_PER_ELEM;
+            let i = (n / bits_per_storage()) as usize;
+            let offset = n % bits_per_storage();
             if val {
                 buffer[i] |= 1 << offset;
             } else {
                 buffer[i] &= !(1 << offset);
             }
         }
+    }
+
+    /// Append a bit to the end of the vector.
+    ///
+    /// ```
+    /// use smallbitvec::SmallBitVec;
+    /// let mut v = SmallBitVec::new();
+    /// v.push(true);
+    ///
+    /// assert_eq!(v.len(), 1);
+    /// assert_eq!(v.get(0), true);
+    /// ```
+    pub fn push(&mut self, val: bool) {
+        let idx = self.len();
+        self.reserve(1);
+        unsafe {
+            self.set_len(idx + 1);
+        }
+        self.set(idx, val);
+    }
+
+    /// Reserve capacity for at least `additional` more elements to be inserted.
+    ///
+    /// May reserve more space than requested, to avoid frequent reallocations.
+    ///
+    /// Panics if the new capacity overflows `u32`.
+    ///
+    /// Re-allocates only if `self.capacity() < self.len() + additional`.
+    pub fn reserve(&mut self, additional: u32) {
+        let old_cap = self.capacity();
+        let new_cap = self.len().checked_add(additional).expect("capacity overflow");
+        if new_cap <= old_cap {
+            return
+        }
+        // Ensure the new capacity is at least double, to guarantee exponential growth.
+        let double_cap = old_cap.saturating_mul(2);
+        self.reallocate(max(new_cap, double_cap));
     }
 
     /// Set the length of the vector. The length must not exceed the capacity.
@@ -165,12 +211,50 @@ impl SmallBitVec {
     unsafe fn set_len(&mut self, len: u32) {
         debug_assert!(len <= self.capacity());
         if self.is_inline() {
-            let sentinel = inline_sentinel(len);
+            let sentinel = inline_index(len);
             let mask = !(sentinel - 1);
             self.data |= sentinel;
             self.data &= mask;
         } else {
             self.header_mut().len = len;
+        }
+    }
+
+    /// Resize the vector to have capacity for at least `cap` bits.
+    ///
+    /// `cap` must be at least as large as the length of the vector.
+    fn reallocate(&mut self, cap: u32) {
+        let old_cap = self.capacity();
+        if cap < old_cap {
+            return
+        }
+        assert!(self.len() <= cap);
+
+        if self.is_heap() {
+            let old_buffer_len = self.header().buffer_len as usize;
+            let new_buffer_len = buffer_len(cap);
+
+            let old_alloc_len = header_len() + old_buffer_len;
+            let new_alloc_len = header_len() + new_buffer_len;
+
+            let old_ptr = self.header_raw() as *mut Storage;
+            let mut v = unsafe {
+                Vec::from_raw_parts(old_ptr, old_alloc_len, old_alloc_len)
+            };
+            v.resize(new_alloc_len, 0);
+            v.shrink_to_fit();
+            self.data = v.as_ptr() as usize | HEAP_FLAG;
+            forget(v);
+
+            self.header_mut().buffer_len = new_buffer_len as u32;
+        } else {
+            let old_self = replace(self, SmallBitVec::with_capacity(cap));
+            unsafe {
+                self.set_len(old_self.len());
+            }
+            for i in 0..old_self.len() {
+                self.set(i, old_self.get(i));
+            }
         }
     }
 
@@ -222,13 +306,13 @@ impl SmallBitVec {
 mod tests {
     use super::*;
 
-    #[cfg(target_pointer_width = "32")] 
+    #[cfg(target_pointer_width = "32")]
     #[test]
     fn test_inline_capacity() {
         assert_eq!(inline_capacity(), 30);
     }
 
-    #[cfg(target_pointer_width = "64")] 
+    #[cfg(target_pointer_width = "64")]
     #[test]
     fn test_inline_capacity() {
         assert_eq!(inline_capacity(), 62);
@@ -280,5 +364,18 @@ mod tests {
         let mut v = SmallBitVec::with_capacity(500);
         unsafe { v.set_len(30); }
         assert_eq!(v.len(), 30);
+    }
+
+    #[test]
+    fn push_many() {
+        let mut v = SmallBitVec::new();
+        for i in 0..500 {
+            v.push(i % 3 == 0);
+        }
+        assert_eq!(v.len(), 500);
+
+        for i in 0..500 {
+            assert_eq!(v.get(i), (i % 3 == 0), "{}", i);
+        }
     }
 }
