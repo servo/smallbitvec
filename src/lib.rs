@@ -395,6 +395,8 @@ impl SmallBitVec {
     }
 }
 
+// Trait implementations:
+
 impl fmt::Debug for SmallBitVec {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_list().entries(self.iter().map(|b| b as u8)).finish()
@@ -432,6 +434,7 @@ impl<'a> IntoIterator for &'a SmallBitVec {
     }
 }
 
+/// An iterator that borrows a SmallBitVec and yields its bits as `bool` values.
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
     idx: u32,
