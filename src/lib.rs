@@ -186,6 +186,29 @@ impl SmallBitVec {
         self.set(idx, val);
     }
 
+    /// Remove the last bit from the vector and return it, if there is one.
+    ///
+    /// ```
+    /// use smallbitvec::SmallBitVec;
+    /// let mut v = SmallBitVec::new();
+    /// v.push(false);
+    ///
+    /// assert_eq!(v.pop(), Some(false));
+    /// assert_eq!(v.len(), 0);
+    /// assert_eq!(v.pop(), None);
+    /// ```
+    pub fn pop(&mut self) -> Option<bool> {
+        let old_len = self.len();
+        if old_len == 0 {
+            return None
+        }
+        let val = self.get(old_len - 1);
+        unsafe {
+            self.set_len(old_len - 1);
+        }
+        Some(val)
+    }
+
     /// Reserve capacity for at least `additional` more elements to be inserted.
     ///
     /// May reserve more space than requested, to avoid frequent reallocations.
