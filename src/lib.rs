@@ -57,16 +57,19 @@ struct Header {
 
 impl Header {
     /// Create a heap allocation with enough space for a header,
-    /// plus a buffer of at least `cap` bits.
-    fn with_capacity(cap: u32) -> *mut Header {
+    /// plus a buffer of at least `cap` bits, each initialized to `val`.
+    fn new(cap: u32, len: u32, val: bool) -> *mut Header {
         let buffer_len = buffer_len(cap);
         let alloc_len = header_len() + buffer_len;
 
-        let v: Vec<Storage> = vec![0; alloc_len];
+        let init = if val { !0 } else { 0 };
+        let v: Vec<Storage> = vec![init; alloc_len];
+
         let header_ptr = v.as_ptr() as *mut Header;
         forget(v);
 
         unsafe {
+            (*header_ptr).len = len;
             (*header_ptr).buffer_len = buffer_len as u32;
         }
         header_ptr
@@ -84,7 +87,7 @@ fn buffer_len(cap: u32) -> usize {
 }
 
 impl SmallBitVec {
-    // Create an empty vector.
+    /// Create an empty vector.
     #[inline]
     pub fn new() -> SmallBitVec {
         SmallBitVec {
@@ -92,7 +95,15 @@ impl SmallBitVec {
         }
     }
 
-    // Create a vector with at least `cap` bits of storage.
+    /// Create a vector containing `len` bits, each set to `val`.
+    pub fn from_elem(len: u32, val: bool) -> SmallBitVec {
+        let header_ptr = Header::new(len, len, val);
+        SmallBitVec {
+            data: (header_ptr as usize) | HEAP_FLAG
+        }
+    }
+
+    /// Create a vector with at least `cap` bits of storage.
     pub fn with_capacity(cap: u32) -> SmallBitVec {
         // Use inline storage if possible.
         if cap <= inline_capacity() {
@@ -100,7 +111,7 @@ impl SmallBitVec {
         }
 
         // Otherwise, allocate on the heap.
-        let header_ptr = Header::with_capacity(cap);
+        let header_ptr = Header::new(cap, 0, false);
         SmallBitVec {
             data: (header_ptr as usize) | HEAP_FLAG
         }
@@ -593,5 +604,18 @@ mod tests {
         v.push(false);
 
         assert_eq!(format!("{:?}", v), "[1, 0, 0]")
+    }
+
+    #[test]
+    fn from_elem() {
+        for len in 0..100 {
+            let ones = SmallBitVec::from_elem(len, true);
+            assert_eq!(ones.len(), len);
+            assert!(ones.all_true());
+
+            let zeros = SmallBitVec::from_elem(len, false);
+            assert_eq!(zeros.len(), len);
+            assert!(zeros.all_false());
+        }
     }
 }
