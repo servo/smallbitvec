@@ -249,6 +249,64 @@ impl SmallBitVec {
         }
     }
 
+    /// Returns true if all the bits in the vec are set to zero/false.
+    pub fn all_false(&self) -> bool {
+        let mut len = self.len();
+        if len == 0 {
+            return true
+        }
+
+        if self.is_inline() {
+            let mask = !(inline_index(len - 1) - 1);
+            self.data & mask == 0
+        } else {
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    if storage != 0 {
+                        return false
+                    }
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    if storage & mask != 0 {
+                        return false
+                    }
+                    break
+                }
+            }
+            true
+        }
+    }
+
+    /// Returns true if all the bits in the vec are set to one/true.
+    pub fn all_true(&self) -> bool {
+        let mut len = self.len();
+        if len == 0 {
+            return true
+        }
+
+        if self.is_inline() {
+            let mask = !(inline_index(len - 1) - 1);
+            self.data & mask == mask
+        } else {
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    if storage != !0 {
+                        return false
+                    }
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    if storage & mask != mask {
+                        return false
+                    }
+                    break
+                }
+            }
+            true
+        }
+    }
+
     /// Resize the vector to have capacity for at least `cap` bits.
     ///
     /// `cap` must be at least as large as the length of the vector.
@@ -420,5 +478,29 @@ mod tests {
     fn set_out_of_bounds() {
         let mut v = SmallBitVec::new();
         v.set(2, false);
+    }
+
+    #[test]
+    fn all_false() {
+        let mut v = SmallBitVec::new();
+        assert!(v.all_false());
+        for _ in 0..100 {
+            v.push(false);
+            assert!(v.all_false());
+        }
+        v.push(true);
+        assert!(!v.all_false());
+    }
+
+    #[test]
+    fn all_true() {
+        let mut v = SmallBitVec::new();
+        assert!(v.all_true());
+        for _ in 0..100 {
+            v.push(true);
+            assert!(v.all_true());
+        }
+        v.push(false);
+        assert!(!v.all_true());
     }
 }
