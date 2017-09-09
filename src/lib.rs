@@ -1,5 +1,6 @@
 use std::cmp::max;
 use std::fmt;
+use std::hash;
 use std::iter::FromIterator;
 use std::mem::{forget, replace, size_of};
 use std::slice;
@@ -449,6 +450,15 @@ impl Clone for SmallBitVec {
         forget(v);
         SmallBitVec {
             data: (header_ptr as usize) | HEAP_FLAG
+        }
+    }
+}
+
+impl hash::Hash for SmallBitVec {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.len().hash(state);
+        for b in self.iter() {
+            b.hash(state);
         }
     }
 }
