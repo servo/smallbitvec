@@ -1,7 +1,7 @@
 use std::cmp::max;
 use std::fmt;
 use std::hash;
-use std::iter::FromIterator;
+use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
 use std::slice;
 
@@ -283,7 +283,7 @@ impl SmallBitVec {
 
     /// Returns an iterator that yields the bits of the vector in order, as `bool` values.
     pub fn iter(&self) -> Iter {
-        Iter { idx: 0, vec: self }
+        Iter { vec: self, idx: 0, end: self.len() }
     }
 
     /// Returns true if all the bits in the vec are set to zero/false.
@@ -509,19 +509,37 @@ impl<'a> IntoIterator for &'a SmallBitVec {
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
     idx: u32,
+    end: u32,
 }
 
 impl<'a> Iterator for Iter<'a> {
     type Item = bool;
     fn next(&mut self) -> Option<bool> {
-        if self.idx >= self.vec.len() {
+        if self.idx >= self.end {
             return None
         }
         let result = self.vec.get(self.idx);
         self.idx += 1;
         Some(result)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = (self.end - self.idx) as usize;
+        (len, Some(len))
+    }
 }
+
+impl<'a> DoubleEndedIterator for Iter<'a> {
+    fn next_back(&mut self) -> Option<bool> {
+        if self.idx >= self.end {
+            return None
+        }
+        self.end -= 1;
+        Some(self.vec.get(self.end))
+    }
+}
+
+impl<'a> ExactSizeIterator for Iter<'a> {}
 
 #[cfg(test)]
 mod tests {
@@ -653,6 +671,20 @@ mod tests {
         assert_eq!(i.next(), Some(true));
         assert_eq!(i.next(), Some(false));
         assert_eq!(i.next(), Some(false));
+        assert_eq!(i.next(), None);
+    }
+
+    #[test]
+    fn iter_back() {
+        let mut v = SmallBitVec::new();
+        v.push(true);
+        v.push(false);
+        v.push(false);
+
+        let mut i = v.iter();
+        assert_eq!(i.next_back(), Some(false));
+        assert_eq!(i.next_back(), Some(false));
+        assert_eq!(i.next_back(), Some(true));
         assert_eq!(i.next(), None);
     }
 
