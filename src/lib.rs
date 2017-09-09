@@ -84,6 +84,7 @@ fn buffer_len(cap: u32) -> usize {
 
 impl SmallBitVec {
     // Create an empty vector.
+    #[inline]
     pub fn new() -> SmallBitVec {
         SmallBitVec {
             data: inline_index(0)
@@ -179,6 +180,7 @@ impl SmallBitVec {
     /// assert_eq!(v.len(), 1);
     /// assert_eq!(v.get(0), true);
     /// ```
+    #[inline]
     pub fn push(&mut self, val: bool) {
         let idx = self.len();
         self.reserve(1);
