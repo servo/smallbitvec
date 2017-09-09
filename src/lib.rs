@@ -250,7 +250,7 @@ impl SmallBitVec {
     /// `cap` must be at least as large as the length of the vector.
     fn reallocate(&mut self, cap: u32) {
         let old_cap = self.capacity();
-        if cap < old_cap {
+        if cap <= old_cap {
             return
         }
         assert!(self.len() <= cap);
