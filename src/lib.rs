@@ -438,6 +438,7 @@ impl SmallBitVec {
 // Trait implementations:
 
 impl fmt::Debug for SmallBitVec {
+    #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_list().entries(self.iter().map(|b| b as u8)).finish()
     }
@@ -475,6 +476,7 @@ impl Clone for SmallBitVec {
 }
 
 impl hash::Hash for SmallBitVec {
+    #[inline]
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.len().hash(state);
         for b in self.iter() {
@@ -484,6 +486,7 @@ impl hash::Hash for SmallBitVec {
 }
 
 impl Extend<bool> for SmallBitVec {
+    #[inline]
     fn extend<I: IntoIterator<Item=bool>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
@@ -498,6 +501,7 @@ impl Extend<bool> for SmallBitVec {
 }
 
 impl FromIterator<bool> for SmallBitVec {
+    #[inline]
     fn from_iter<I: IntoIterator<Item=bool>>(iter: I) -> Self {
         let mut v = SmallBitVec::new();
         v.extend(iter);
@@ -509,6 +513,7 @@ impl<'a> IntoIterator for &'a SmallBitVec {
     type Item = bool;
     type IntoIter = Iter<'a>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -523,6 +528,8 @@ pub struct Iter<'a> {
 
 impl<'a> Iterator for Iter<'a> {
     type Item = bool;
+
+    #[inline]
     fn next(&mut self) -> Option<bool> {
         if self.idx >= self.end {
             return None
@@ -532,6 +539,7 @@ impl<'a> Iterator for Iter<'a> {
         Some(result)
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = (self.end - self.idx) as usize;
         (len, Some(len))
@@ -539,6 +547,7 @@ impl<'a> Iterator for Iter<'a> {
 }
 
 impl<'a> DoubleEndedIterator for Iter<'a> {
+    #[inline]
     fn next_back(&mut self) -> Option<bool> {
         if self.idx >= self.end {
             return None
