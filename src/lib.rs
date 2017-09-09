@@ -183,7 +183,9 @@ impl SmallBitVec {
     #[inline]
     pub fn push(&mut self, val: bool) {
         let idx = self.len();
-        self.reserve(1);
+        if idx == self.capacity() {
+            self.reserve(1);
+        }
         unsafe {
             self.set_len(idx + 1);
         }
