@@ -1,3 +1,4 @@
+use std::fmt;
 use std::cmp::max;
 use std::mem::{forget, replace, size_of};
 use std::slice;
@@ -394,6 +395,12 @@ impl SmallBitVec {
     }
 }
 
+impl fmt::Debug for SmallBitVec {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_list().entries(self.iter().map(|b| b as u8)).finish()
+    }
+}
+
 impl Clone for SmallBitVec {
     fn clone(&self) -> Self {
         if self.is_inline() {
@@ -573,5 +580,15 @@ mod tests {
         assert_eq!(i.next(), Some(false));
         assert_eq!(i.next(), Some(false));
         assert_eq!(i.next(), None);
+    }
+
+    #[test]
+    fn debug() {
+        let mut v = SmallBitVec::new();
+        v.push(true);
+        v.push(false);
+        v.push(false);
+
+        assert_eq!(format!("{:?}", v), "[1, 0, 0]")
     }
 }
