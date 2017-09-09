@@ -229,6 +229,17 @@ impl SmallBitVec {
         Some(val)
     }
 
+    /// Remove the bit at index `idx`, shifting all later bits toward the front.
+    pub fn remove(&mut self, idx: u32) {
+        assert!(idx < self.len(), "index out of bounds");
+
+        for i in (idx+1)..self.len() {
+            let next_val = self.get(i);
+            self.set(i - 1, next_val);
+        }
+        self.pop();
+    }
+
     /// Remove all elements from the vector, without deallocating its buffer.
     pub fn clear(&mut self) {
         unsafe {
@@ -666,5 +677,18 @@ mod tests {
             assert_eq!(zeros.len(), len);
             assert!(zeros.all_false());
         }
+    }
+
+    #[test]
+    fn remove() {
+        let mut v = SmallBitVec::new();
+        v.push(false);
+        v.push(true);
+        v.push(false);
+        v.push(false);
+        v.push(true);
+
+        v.remove(1);
+        assert_eq!(format!("{:?}", v), "[0, 0, 0, 1]")
     }
 }
