@@ -416,6 +416,15 @@ impl Clone for SmallBitVec {
     }
 }
 
+impl<'a> IntoIterator for &'a SmallBitVec {
+    type Item = bool;
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
     idx: u32,
