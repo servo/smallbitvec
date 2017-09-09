@@ -134,10 +134,10 @@ impl SmallBitVec {
     }
 
     /// Get the nth bit in this bit vector.
-    ///
-    /// FIXME: Bounds checking.
     #[inline]
     pub fn get(&self, n: u32) -> bool {
+        assert!(n < self.len(), "Index {} out of bounds", n);
+
         if self.is_inline() {
             self.data & inline_index(n) != 0
         } else {
@@ -149,9 +149,9 @@ impl SmallBitVec {
     }
 
     /// Set the nth bit in this bit vector to `val`.
-    ///
-    /// FIXME: Bounds checking.
     pub fn set(&mut self, n: u32, val: bool) {
+        assert!(n < self.len(), "Index {} out of bounds", n);
+
         if self.is_inline() {
             if val {
                 self.data |= inline_index(n);
@@ -406,5 +406,19 @@ mod tests {
         for i in 0..500 {
             assert_eq!(v.get(i), (i % 3 == 0), "{}", i);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_out_of_bounds() {
+        let v = SmallBitVec::new();
+        v.get(0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn set_out_of_bounds() {
+        let mut v = SmallBitVec::new();
+        v.set(2, false);
     }
 }
