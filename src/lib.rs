@@ -227,6 +227,13 @@ impl SmallBitVec {
         Some(val)
     }
 
+    /// Remove all elements from the vector, without deallocating its buffer.
+    pub fn clear(&mut self) {
+        unsafe {
+            self.set_len(0);
+        }
+    }
+
     /// Reserve capacity for at least `additional` more elements to be inserted.
     ///
     /// May reserve more space than requested, to avoid frequent reallocations.
