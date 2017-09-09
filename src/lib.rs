@@ -1,5 +1,6 @@
-use std::fmt;
 use std::cmp::max;
+use std::fmt;
+use std::iter::FromIterator;
 use std::mem::{forget, replace, size_of};
 use std::slice;
 
@@ -440,6 +441,28 @@ impl Clone for SmallBitVec {
         SmallBitVec {
             data: (header_ptr as usize) | HEAP_FLAG
         }
+    }
+}
+
+impl Extend<bool> for SmallBitVec {
+    fn extend<I: IntoIterator<Item=bool>>(&mut self, iter: I) {
+        let iter = iter.into_iter();
+
+        let (min, _) = iter.size_hint();
+        assert!(min <= u32::max_value() as usize, "capacity overflow");
+        self.reserve(min as u32);
+
+        for element in iter {
+            self.push(element)
+        }
+    }
+}
+
+impl FromIterator<bool> for SmallBitVec {
+    fn from_iter<I: IntoIterator<Item=bool>>(iter: I) -> Self {
+        let mut v = SmallBitVec::new();
+        v.extend(iter);
+        v
     }
 }
 
