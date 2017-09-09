@@ -389,6 +389,28 @@ impl SmallBitVec {
     }
 }
 
+impl Clone for SmallBitVec {
+    fn clone(&self) -> Self {
+        if self.is_inline() {
+            return SmallBitVec { data: self.data }
+        }
+
+        let buffer_len = self.header().buffer_len as usize;
+        let alloc_len = header_len() + buffer_len;
+        let ptr = self.header_raw() as *mut Storage;
+        let raw_allocation = unsafe {
+            slice::from_raw_parts(ptr, alloc_len)
+        };
+
+        let v = raw_allocation.to_vec();
+        let header_ptr = v.as_ptr() as *mut Header;
+        forget(v);
+        SmallBitVec {
+            data: (header_ptr as usize) | HEAP_FLAG
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -487,9 +509,11 @@ mod tests {
         for _ in 0..100 {
             v.push(false);
             assert!(v.all_false());
+
+            let mut v2 = v.clone();
+            v2.push(true);
+            assert!(!v2.all_false());
         }
-        v.push(true);
-        assert!(!v.all_false());
     }
 
     #[test]
@@ -499,8 +523,10 @@ mod tests {
         for _ in 0..100 {
             v.push(true);
             assert!(v.all_true());
+
+            let mut v2 = v.clone();
+            v2.push(false);
+            assert!(!v2.all_true());
         }
-        v.push(false);
-        assert!(!v.all_true());
     }
 }
