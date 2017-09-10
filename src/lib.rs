@@ -20,6 +20,7 @@ use std::fmt;
 use std::hash;
 use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
+use std::ops::Range;
 use std::slice;
 
 /// A resizable bit vector, optimized for size and inline storage.
@@ -314,7 +315,7 @@ impl SmallBitVec {
 
     /// Returns an iterator that yields the bits of the vector in order, as `bool` values.
     pub fn iter(&self) -> Iter {
-        Iter { vec: self, idx: 0, end: self.len() }
+        Iter { vec: self, range: 0..self.len() }
     }
 
     /// Returns true if all the bits in the vec are set to zero/false.
@@ -557,8 +558,7 @@ impl<'a> IntoIterator for &'a SmallBitVec {
 /// An iterator that borrows a SmallBitVec and yields its bits as `bool` values.
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
-    idx: u32,
-    end: u32,
+    range: Range<u32>,
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -566,33 +566,19 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<bool> {
-        if self.idx >= self.end {
-            return None
-        }
-        let result = unsafe {
-            self.vec.get_unchecked(self.idx)
-        };
-        self.idx += 1;
-        Some(result)
+        self.range.next().map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = (self.end - self.idx) as usize;
-        (len, Some(len))
+        self.range.size_hint()
     }
 }
 
 impl<'a> DoubleEndedIterator for Iter<'a> {
     #[inline]
     fn next_back(&mut self) -> Option<bool> {
-        if self.idx >= self.end {
-            return None
-        }
-        self.end -= 1;
-        unsafe {
-            Some(self.vec.get_unchecked(self.end))
-        }
+        self.range.next_back().map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 }
 
