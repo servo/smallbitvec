@@ -68,13 +68,14 @@ impl Header {
     /// Create a heap allocation with enough space for a header,
     /// plus a buffer of at least `cap` bits, each initialized to `val`.
     fn new(cap: u32, len: u32, val: bool) -> *mut Header {
-        let buffer_len = buffer_len(cap);
-        let alloc_len = header_len() + buffer_len;
-
+        let alloc_len = header_len() + buffer_len(cap);
         let init = if val { !0 } else { 0 };
+
         let v: Vec<Storage> = vec![init; alloc_len];
 
+        let buffer_len = v.capacity() - header_len();
         let header_ptr = v.as_ptr() as *mut Header;
+
         forget(v);
 
         unsafe {
@@ -463,6 +464,19 @@ impl PartialEq for SmallBitVec {
 }
 
 impl Eq for SmallBitVec {}
+
+impl Drop for SmallBitVec {
+    fn drop(&mut self) {
+        if self.is_heap() {
+            unsafe {
+                let header_ptr = self.header_raw();
+                let alloc_ptr = header_ptr as *mut Storage;
+                let alloc_len = header_len() + (*header_ptr).buffer_len as usize;
+                Vec::from_raw_parts(alloc_ptr, alloc_len, alloc_len);
+            }
+        }
+    }
+}
 
 impl Clone for SmallBitVec {
     fn clone(&self) -> Self {
