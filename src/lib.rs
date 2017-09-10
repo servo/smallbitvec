@@ -544,17 +544,64 @@ impl FromIterator<bool> for SmallBitVec {
     }
 }
 
+impl IntoIterator for SmallBitVec {
+    type Item = bool;
+    type IntoIter = IntoIter;
+
+    #[inline]
+    fn into_iter(self) -> IntoIter {
+        IntoIter { range: 0..self.len(), vec: self }
+    }
+}
+
 impl<'a> IntoIterator for &'a SmallBitVec {
     type Item = bool;
     type IntoIter = Iter<'a>;
 
     #[inline]
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(self) -> Iter<'a> {
         self.iter()
     }
 }
 
 /// An iterator that borrows a SmallBitVec and yields its bits as `bool` values.
+///
+/// Returned from [`SmallBitVec::into_iter`][1].
+///
+/// [1]: struct.SmallBitVec.html#method.into_iter
+pub struct IntoIter {
+    vec: SmallBitVec,
+    range: Range<u32>,
+}
+
+impl Iterator for IntoIter {
+    type Item = bool;
+
+    #[inline]
+    fn next(&mut self) -> Option<bool> {
+        self.range.next().map(|i| unsafe { self.vec.get_unchecked(i) })
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.range.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for IntoIter {
+    #[inline]
+    fn next_back(&mut self) -> Option<bool> {
+        self.range.next_back().map(|i| unsafe { self.vec.get_unchecked(i) })
+    }
+}
+
+impl ExactSizeIterator for IntoIter {}
+
+/// An iterator that borrows a SmallBitVec and yields its bits as `bool` values.
+///
+/// Returned from [`SmallBitVec::iter`][1].
+///
+/// [1]: struct.SmallBitVec.html#method.iter
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
     range: Range<u32>,
@@ -710,6 +757,20 @@ mod tests {
         v.push(false);
 
         let mut i = v.iter();
+        assert_eq!(i.next(), Some(true));
+        assert_eq!(i.next(), Some(false));
+        assert_eq!(i.next(), Some(false));
+        assert_eq!(i.next(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut v = SmallBitVec::new();
+        v.push(true);
+        v.push(false);
+        v.push(false);
+
+        let mut i = v.into_iter();
         assert_eq!(i.next(), Some(true));
         assert_eq!(i.next(), Some(false));
         assert_eq!(i.next(), Some(false));
