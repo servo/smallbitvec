@@ -174,7 +174,6 @@ impl SmallBitVec {
     }
 
     /// Get the nth bit in this bit vector, without bounds checks.
-    #[inline]
     pub unsafe fn get_unchecked(&self, n: u32) -> bool {
         if self.is_inline() {
             self.data & inline_index(n) != 0
