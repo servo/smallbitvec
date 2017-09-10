@@ -414,7 +414,7 @@ impl SmallBitVec {
 
     /// If the rightmost bit is set, then we treat it as inline storage.
     fn is_inline(&self) -> bool {
-        self.data & 1 == 0
+        self.data & HEAP_FLAG == 0
     }
 
     /// Otherwise, `data` is a pointer to a heap allocation.
