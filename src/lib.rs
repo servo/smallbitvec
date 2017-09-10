@@ -1,3 +1,12 @@
+// Copyright 2017 Matt Brubeck. See the COPYRIGHT file at the top-level
+// directory of this distribution and at http://rust-lang.org/COPYRIGHT.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! [`SmallBitVec`] is a bit vector, a vector of single-bit values stored compactly in memory.
 //!
 //! SmallBitVec grows dynamically, like the standard `Vec<T>` type.  It can hold up to about one
