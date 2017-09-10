@@ -158,21 +158,30 @@ impl SmallBitVec {
     #[inline]
     pub fn get(&self, n: u32) -> bool {
         assert!(n < self.len(), "Index {} out of bounds", n);
+        unsafe { self.get_unchecked(n) }
+    }
 
+    /// Get the nth bit in this bit vector, without bounds checks.
+    #[inline]
+    pub unsafe fn get_unchecked(&self, n: u32) -> bool {
         if self.is_inline() {
             self.data & inline_index(n) != 0
         } else {
             let buffer = self.buffer();
             let i = (n / bits_per_storage()) as usize;
             let offset = n % bits_per_storage();
-            buffer[i] & (1 << offset) != 0
+            *buffer.get_unchecked(i) & (1 << offset) != 0
         }
     }
 
     /// Set the nth bit in this bit vector to `val`.  Panics if the index is out of bounds.
     pub fn set(&mut self, n: u32, val: bool) {
         assert!(n < self.len(), "Index {} out of bounds", n);
+        unsafe { self.set_unchecked(n, val); }
+    }
 
+    /// Set the nth bit in this bit vector to `val`, without bounds checks.
+    pub unsafe fn set_unchecked(&mut self, n: u32, val: bool) {
         if self.is_inline() {
             if val {
                 self.data |= inline_index(n);
@@ -184,9 +193,9 @@ impl SmallBitVec {
             let i = (n / bits_per_storage()) as usize;
             let offset = n % bits_per_storage();
             if val {
-                buffer[i] |= 1 << offset;
+                *buffer.get_unchecked_mut(i) |= 1 << offset;
             } else {
-                buffer[i] &= !(1 << offset);
+                *buffer.get_unchecked_mut(i) &= !(1 << offset);
             }
         }
     }
@@ -209,8 +218,8 @@ impl SmallBitVec {
         }
         unsafe {
             self.set_len(idx + 1);
+            self.set_unchecked(idx, val);
         }
-        self.set(idx, val);
     }
 
     /// Remove the last bit from the vector and return it, if there is one.
@@ -229,11 +238,11 @@ impl SmallBitVec {
         if old_len == 0 {
             return None
         }
-        let val = self.get(old_len - 1);
         unsafe {
+            let val = self.get_unchecked(old_len - 1);
             self.set_len(old_len - 1);
+            Some(val)
         }
-        Some(val)
     }
 
     /// Remove the bit at index `idx`, shifting all later bits toward the front.
@@ -243,8 +252,10 @@ impl SmallBitVec {
         assert!(idx < self.len(), "Index {} out of bounds", idx);
 
         for i in (idx+1)..self.len() {
-            let next_val = self.get(i);
-            self.set(i - 1, next_val);
+            unsafe {
+                let next_val = self.get_unchecked(i);
+                self.set_unchecked(i - 1, next_val);
+            }
         }
         self.pop();
     }
@@ -384,9 +395,9 @@ impl SmallBitVec {
             let old_self = replace(self, SmallBitVec::with_capacity(cap));
             unsafe {
                 self.set_len(old_self.len());
-            }
-            for i in 0..old_self.len() {
-                self.set(i, old_self.get(i));
+                for i in 0..old_self.len() {
+                    self.set_unchecked(i, old_self.get_unchecked(i));
+                }
             }
         }
     }
