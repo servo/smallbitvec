@@ -58,6 +58,7 @@ const HEAP_FLAG: usize = 1;
 type Storage = u32;
 
 /// The number of bits in one `Storage`.
+#[inline(always)]
 fn bits_per_storage() -> u32 {
     size_of::<Storage>() as u32 * 8
 }
