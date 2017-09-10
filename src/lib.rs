@@ -568,7 +568,9 @@ impl<'a> Iterator for Iter<'a> {
         if self.idx >= self.end {
             return None
         }
-        let result = self.vec.get(self.idx);
+        let result = unsafe {
+            self.vec.get_unchecked(self.idx)
+        };
         self.idx += 1;
         Some(result)
     }
@@ -587,7 +589,9 @@ impl<'a> DoubleEndedIterator for Iter<'a> {
             return None
         }
         self.end -= 1;
-        Some(self.vec.get(self.end))
+        unsafe {
+            Some(self.vec.get_unchecked(self.end))
+        }
     }
 }
 
