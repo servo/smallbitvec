@@ -101,6 +101,42 @@ fn bench_bit_set_small_sbv(b: &mut Bencher) {
 }
 
 #[bench]
+fn bench_bit_vec_small_eq_bv(b: &mut Bencher) {
+    let x = BitVec::from_elem(U32_BITS, false);
+    let y = BitVec::from_elem(U32_BITS, false);
+    b.iter(|| {
+        x == y
+    });
+}
+
+#[bench]
+fn bench_bit_vec_small_eq_sbv(b: &mut Bencher) {
+    let x = SmallBitVec::from_elem(U32_BITS as u32, false);
+    let y = SmallBitVec::from_elem(U32_BITS as u32, false);
+    b.iter(|| {
+        x == y
+    });
+}
+
+#[bench]
+fn bench_bit_vec_big_eq_bv(b: &mut Bencher) {
+    let x = BitVec::from_elem(BENCH_BITS, false);
+    let y = BitVec::from_elem(BENCH_BITS, false);
+    b.iter(|| {
+        x == y
+    });
+}
+
+#[bench]
+fn bench_bit_vec_big_eq_sbv(b: &mut Bencher) {
+    let x = SmallBitVec::from_elem(BENCH_BITS as u32, false);
+    let y = SmallBitVec::from_elem(BENCH_BITS as u32, false);
+    b.iter(|| {
+        x == y
+    });
+}
+
+#[bench]
 fn bench_bit_vec_small_iter_bv(b: &mut Bencher) {
     let bit_vec = BitVec::from_elem(U32_BITS, false);
     b.iter(|| {

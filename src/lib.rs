@@ -634,6 +634,16 @@ impl<'a> ExactSizeIterator for Iter<'a> {}
 mod tests {
     use super::*;
 
+    macro_rules! v {
+        ($elem:expr; $n:expr) => ({
+            SmallBitVec::from_elem($n, $elem)
+        });
+        ($($x:expr),*) => ({
+            [$($x),*].iter().cloned().collect::<SmallBitVec>()
+        });
+    }
+
+
     #[cfg(target_pointer_width = "32")]
     #[test]
     fn test_inline_capacity() {
@@ -825,5 +835,25 @@ mod tests {
 
         v.remove(1);
         assert_eq!(format!("{:?}", v), "[0, 0, 0, 1]")
+    }
+
+    #[test]
+    fn eq() {
+        assert_eq!(v![], v![]);
+        assert_eq!(v![true], v![true]);
+        assert_eq!(v![false], v![false]);
+
+        assert_ne!(v![], v![false]);
+        assert_ne!(v![true], v![]);
+        assert_ne!(v![true], v![false]);
+        assert_ne!(v![false], v![true]);
+
+        assert_eq!(v![true, false], v![true, false]);
+        assert_eq!(v![true; 400], v![true; 400]);
+        assert_eq!(v![false; 400], v![false; 400]);
+
+        assert_ne!(v![true, false], v![true, true]);
+        assert_ne!(v![true; 400], v![true; 401]);
+        assert_ne!(v![false; 401], v![false; 400]);
     }
 }
