@@ -467,8 +467,39 @@ impl fmt::Debug for SmallBitVec {
 }
 
 impl PartialEq for SmallBitVec {
-    #[inline]
     fn eq(&self, other: &Self) -> bool {
+        // Compare by inline representation
+        if self.is_inline() && other.is_inline() {
+            return self.data == other.data
+        }
+
+        let len = self.len();
+        if len != other.len() {
+            return false
+        }
+
+        // Compare by heap representation
+        if self.is_heap() && other.is_heap() {
+            let buf0 = self.buffer();
+            let buf1 = other.buffer();
+
+            let full_blocks = (len / bits_per_storage()) as usize;
+            let remainder = len % bits_per_storage();
+
+            if buf0[..full_blocks] != buf1[..full_blocks] {
+                return false
+            }
+
+            if remainder != 0 {
+                let mask = (1 << remainder) - 1;
+                if buf0[full_blocks] & mask != buf1[full_blocks] & mask {
+                    return false
+                }
+            }
+            return true
+        }
+
+        // Representations differ; fall back to bit-by-bit comparison
         Iterator::eq(self.iter(), other.iter())
     }
 }
