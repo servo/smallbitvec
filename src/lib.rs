@@ -448,7 +448,7 @@ impl SmallBitVec {
         }
     }
 
-    fn buffer_mut(&self) -> &mut [Storage] {
+    fn buffer_mut(&mut self) -> &mut [Storage] {
         unsafe { &mut *self.buffer_raw() }
     }
 
