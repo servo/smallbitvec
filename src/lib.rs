@@ -413,6 +413,16 @@ impl SmallBitVec {
         }
     }
 
+    /// If the vector owns a heap allocation, returns a pointer to the start of the allocation.
+    ///
+    /// The layout of the data at this allocation is a private implementation detail.
+    pub fn heap_ptr(&self) -> Option<*const u32> {
+        match self.is_heap() {
+            true => Some((self.data & !HEAP_FLAG) as *const Storage),
+            false => None
+        }
+    }
+
     /// If the rightmost bit is set, then we treat it as inline storage.
     fn is_inline(&self) -> bool {
         self.data & HEAP_FLAG == 0
