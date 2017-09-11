@@ -124,7 +124,8 @@ impl SmallBitVec {
         }
     }
 
-    /// Create a vector with at least `cap` bits of storage.
+    /// Create an empty vector enough storage pre-allocated to store at least `cap` bits without
+    /// resizing.
     pub fn with_capacity(cap: u32) -> SmallBitVec {
         // Use inline storage if possible.
         if cap <= inline_capacity() {
@@ -605,7 +606,7 @@ impl<'a> IntoIterator for &'a SmallBitVec {
     }
 }
 
-/// An iterator that borrows a SmallBitVec and yields its bits as `bool` values.
+/// An iterator that owns a SmallBitVec and yields its bits as `bool` values.
 ///
 /// Returned from [`SmallBitVec::into_iter`][1].
 ///
