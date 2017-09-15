@@ -55,10 +55,16 @@ fn inline_shift(n: u32) -> u32 {
 fn inline_index(n: u32) -> usize {
     1 << inline_shift(n)
 }
-/// An inline vector with the nth first bits plus the length mark set.
+
+/// An inline vector with the leftmost `n` bits set.
 fn inline_ones(n: u32) -> usize {
-    !0 << inline_shift(n)
+    if n == 0 {
+        0
+    } else {
+        !0 << (inline_bits() - n)
+    }
 }
+
 /// If the rightmost bit of `data` is set, then the remaining bits of `data`
 /// are a pointer to a heap allocation.
 const HEAP_FLAG: usize = 1;
@@ -129,7 +135,7 @@ impl SmallBitVec {
         if len <= inline_capacity() {
             return SmallBitVec {
                 data: if val {
-                    inline_ones(len)
+                    inline_ones(len + 1)
                 } else {
                     inline_index(len)
                 }
@@ -346,7 +352,7 @@ impl SmallBitVec {
         }
 
         if self.is_inline() {
-            let mask = inline_ones(len - 1);
+            let mask = inline_ones(len);
             self.data & mask == 0
         } else {
             for &storage in self.buffer() {
@@ -375,7 +381,7 @@ impl SmallBitVec {
         }
 
         if self.is_inline() {
-            let mask = inline_ones(len - 1);
+            let mask = inline_ones(len);
             self.data & mask == mask
         } else {
             for &storage in self.buffer() {
