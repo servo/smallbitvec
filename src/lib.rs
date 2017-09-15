@@ -287,14 +287,23 @@ impl SmallBitVec {
         let len = self.len();
         assert!(idx < len, "Index {} out of bounds", idx);
 
-        for i in (idx+1)..len {
-            unsafe {
-                let next_val = self.get_unchecked(i);
-                self.set_unchecked(i - 1, next_val);
+        if self.is_inline() {
+            // Shift later bits, including the length bit, toward the front.
+            let mask = !inline_ones(idx);
+            let new_vals = (self.data & mask) << 1;
+            self.data = (self.data & !mask) | (new_vals & mask);
+        } else {
+            // Shift later bits toward the front.
+            for i in (idx+1)..len {
+                unsafe {
+                    let next_val = self.get_unchecked(i);
+                    self.set_unchecked(i - 1, next_val);
+                }
             }
-        }
-        unsafe {
-            self.set_len(len - 1);
+            // Decrement the length.
+            unsafe {
+                self.set_len(len - 1);
+            }
         }
     }
 
