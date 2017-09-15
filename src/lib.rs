@@ -293,12 +293,26 @@ impl SmallBitVec {
             let new_vals = (self.data & mask) << 1;
             self.data = (self.data & !mask) | (new_vals & mask);
         } else {
-            // Shift later bits toward the front.
-            for i in (idx+1)..len {
+            let first = (idx / bits_per_storage()) as usize;
+            let offset = idx % bits_per_storage();
+            let count = buffer_len(len);
+            {
+                // Shift bits within the first storage block.
+                let buf = self.buffer_mut();
+                let mask = !0 << offset;
+                let new_vals = (buf[first] & mask) >> 1;
+                buf[first] = (buf[first] & !mask) | (new_vals & mask);
+            }
+            // Shift bits in subsequent storage blocks.
+            for i in (first + 1)..count {
+                // Move the first bit into the previous block.
+                let bit_idx = i as u32 * bits_per_storage();
                 unsafe {
-                    let next_val = self.get_unchecked(i);
-                    self.set_unchecked(i - 1, next_val);
+                    let first_bit = self.get_unchecked(bit_idx);
+                    self.set_unchecked(bit_idx - 1, first_bit);
                 }
+                // Shift the remaining bits.
+                self.buffer_mut()[i] >>= 1;
             }
             // Decrement the length.
             unsafe {
