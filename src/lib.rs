@@ -893,7 +893,39 @@ mod tests {
         v.push(true);
 
         v.remove(1);
-        assert_eq!(format!("{:?}", v), "[0, 0, 0, 1]")
+        assert_eq!(format!("{:?}", v), "[0, 0, 0, 1]");
+        v.remove(0);
+        assert_eq!(format!("{:?}", v), "[0, 0, 1]");
+        v.remove(2);
+        assert_eq!(format!("{:?}", v), "[0, 0]");
+        v.remove(1);
+        assert_eq!(format!("{:?}", v), "[0]");
+        v.remove(0);
+        assert_eq!(format!("{:?}", v), "[]");
+    }
+
+    #[test]
+    fn remove_big() {
+        let mut v = SmallBitVec::from_elem(256, false);
+        v.set(100, true);
+        v.set(255, true);
+        v.remove(0);
+        assert_eq!(v.len(), 255);
+        assert_eq!(v.get(0), false);
+        assert_eq!(v.get(99), true);
+        assert_eq!(v.get(100), false);
+        assert_eq!(v.get(253), false);
+        assert_eq!(v.get(254), true);
+
+        v.remove(254);
+        assert_eq!(v.len(), 254);
+        assert_eq!(v.get(0), false);
+        assert_eq!(v.get(99), true);
+        assert_eq!(v.get(100), false);
+        assert_eq!(v.get(253), false);
+
+        v.remove(99);
+        assert_eq!(v, SmallBitVec::from_elem(253, false));
     }
 
     #[test]
