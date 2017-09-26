@@ -147,8 +147,8 @@ impl SmallBitVec {
         }
     }
 
-    /// Create an empty vector enough storage pre-allocated to store at least `cap` bits without
-    /// resizing.
+    /// Create an empty vector with enough storage pre-allocated to store at least `cap` bits
+    /// without resizing.
     pub fn with_capacity(cap: u32) -> SmallBitVec {
         // Use inline storage if possible.
         if cap <= inline_capacity() {
