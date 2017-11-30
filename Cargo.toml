@@ -7,6 +7,7 @@ description = "A bit vector optimized for size and inline storage"
 repository = "https://github.com/servo/smallbitvec"
 documentation = "https://docs.rs/smallbitvec"
 keywords = ["bitvec", "bitmap", "vec", "data-structures"]
+categories = ["data-structures"]
 readme = "README.md"
 
 [dev-dependencies]
