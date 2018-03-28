@@ -20,7 +20,7 @@ use std::fmt;
 use std::hash;
 use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
-use std::ops::Range;
+use std::ops::{Range, Index};
 use std::slice;
 
 #[cfg(test)]
@@ -601,6 +601,16 @@ impl Clone for SmallBitVec {
         SmallBitVec {
             data: (header_ptr as usize) | HEAP_FLAG
         }
+    }
+}
+
+impl Index<usize> for SmallBitVec {
+    type Output = bool;
+
+    #[inline]
+    fn index(&self, i: usize) -> &bool {
+        assert!(i < self.len() as usize, "index out of range");
+        if self.get(i as u32) { &true } else { &false }
     }
 }
 
