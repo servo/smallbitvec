@@ -195,9 +195,12 @@ impl SmallBitVec {
 
     /// Get the nth bit in this bit vector.  Panics if the index is out of bounds.
     #[inline]
-    pub fn get(&self, n: u32) -> bool {
-        assert!(n < self.len(), "Index {} out of bounds", n);
-        unsafe { self.get_unchecked(n) }
+    pub fn get(&self, n: u32) -> Option<bool> {
+        if n < self.len() {
+            Some(unsafe { self.get_unchecked(n) })
+        } else {
+            None
+        }
     }
 
     /// Get the nth bit in this bit vector, without bounds checks.
@@ -246,7 +249,7 @@ impl SmallBitVec {
     /// v.push(true);
     ///
     /// assert_eq!(v.len(), 1);
-    /// assert_eq!(v.get(0), true);
+    /// assert_eq!(v.get(0), Some(true));
     /// ```
     #[inline]
     pub fn push(&mut self, val: bool) {
@@ -610,7 +613,11 @@ impl Index<usize> for SmallBitVec {
     #[inline]
     fn index(&self, i: usize) -> &bool {
         assert!(i < self.len() as usize, "index out of range");
-        if self.get(i as u32) { &true } else { &false }
+        if self.get(i as u32).unwrap() {
+            &true
+        } else {
+            &false
+        }
     }
 }
 

@@ -88,8 +88,8 @@ fn push_many() {
     assert_eq!(v.len(), 500);
 
     for i in 0..500 {
-        assert_eq!(v.get(i), (i % 3 == 0), "{}", i);
-        assert_eq!(v[i as usize], v.get(i));
+        assert_eq!(v.get(i).unwrap(), (i % 3 == 0), "{}", i);
+        assert_eq!(v[i as usize], v.get(i).unwrap());
     }
 }
 
@@ -109,10 +109,9 @@ fn index_u32_overflow() {
 }
 
 #[test]
-#[should_panic]
 fn get_out_of_bounds() {
     let v = SmallBitVec::new();
-    v.get(0);
+    assert!(v.get(0).is_none());
 }
 
 #[test]
@@ -243,18 +242,18 @@ fn remove_big() {
     v.set(255, true);
     v.remove(0);
     assert_eq!(v.len(), 255);
-    assert_eq!(v.get(0), false);
-    assert_eq!(v.get(99), true);
-    assert_eq!(v.get(100), false);
-    assert_eq!(v.get(253), false);
-    assert_eq!(v.get(254), true);
+    assert_eq!(v.get(0).unwrap(), false);
+    assert_eq!(v.get(99).unwrap(), true);
+    assert_eq!(v.get(100).unwrap(), false);
+    assert_eq!(v.get(253).unwrap(), false);
+    assert_eq!(v.get(254).unwrap(), true);
 
     v.remove(254);
     assert_eq!(v.len(), 254);
-    assert_eq!(v.get(0), false);
-    assert_eq!(v.get(99), true);
-    assert_eq!(v.get(100), false);
-    assert_eq!(v.get(253), false);
+    assert_eq!(v.get(0).unwrap(), false);
+    assert_eq!(v.get(99).unwrap(), true);
+    assert_eq!(v.get(100).unwrap(), false);
+    assert_eq!(v.get(253).unwrap(), false);
 
     v.remove(99);
     assert_eq!(v, SmallBitVec::from_elem(253, false));
