@@ -20,7 +20,7 @@ use std::fmt;
 use std::hash;
 use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
-use std::ops::{Range, Index};
+use std::ops::{Index, Range};
 use std::slice;
 
 /// Creates a [`SmallBitVec`] containing the arguments.
@@ -171,7 +171,7 @@ impl SmallBitVec {
     #[inline]
     pub fn new() -> SmallBitVec {
         SmallBitVec {
-            data: inline_index(0)
+            data: inline_index(0),
         }
     }
 
@@ -183,12 +183,12 @@ impl SmallBitVec {
                     inline_ones(len + 1)
                 } else {
                     inline_index(len)
-                }
-            }
+                },
+            };
         }
         let header_ptr = Header::new(len, len, val);
         SmallBitVec {
-            data: (header_ptr as usize) | HEAP_FLAG
+            data: (header_ptr as usize) | HEAP_FLAG,
         }
     }
 
@@ -197,13 +197,13 @@ impl SmallBitVec {
     pub fn with_capacity(cap: usize) -> SmallBitVec {
         // Use inline storage if possible.
         if cap <= inline_capacity() {
-            return SmallBitVec::new()
+            return SmallBitVec::new();
         }
 
         // Otherwise, allocate on the heap.
         let header_ptr = Header::new(cap, 0, false);
         SmallBitVec {
-            data: (header_ptr as usize) | HEAP_FLAG
+            data: (header_ptr as usize) | HEAP_FLAG,
         }
     }
 
@@ -260,7 +260,9 @@ impl SmallBitVec {
     /// Set the nth bit in this bit vector to `val`.  Panics if the index is out of bounds.
     pub fn set(&mut self, n: usize, val: bool) {
         assert!(n < self.len(), "Index {} out of bounds", n);
-        unsafe { self.set_unchecked(n, val); }
+        unsafe {
+            self.set_unchecked(n, val);
+        }
     }
 
     /// Set the nth bit in this bit vector to `val`, without bounds checks.
@@ -319,7 +321,7 @@ impl SmallBitVec {
     pub fn pop(&mut self) -> Option<bool> {
         let old_len = self.len();
         if old_len == 0 {
-            return None
+            return None;
         }
         unsafe {
             let val = self.get_unchecked(old_len - 1);
@@ -386,9 +388,11 @@ impl SmallBitVec {
     /// Re-allocates only if `self.capacity() < self.len() + additional`.
     pub fn reserve(&mut self, additional: usize) {
         let old_cap = self.capacity();
-        let new_cap = self.len().checked_add(additional).expect("capacity overflow");
+        let new_cap = self.len()
+            .checked_add(additional)
+            .expect("capacity overflow");
         if new_cap <= old_cap {
-            return
+            return;
         }
         // Ensure the new capacity is at least double, to guarantee exponential growth.
         let double_cap = old_cap.saturating_mul(2);
@@ -413,14 +417,17 @@ impl SmallBitVec {
 
     /// Returns an iterator that yields the bits of the vector in order, as `bool` values.
     pub fn iter(&self) -> Iter {
-        Iter { vec: self, range: 0..self.len() }
+        Iter {
+            vec: self,
+            range: 0..self.len(),
+        }
     }
 
     /// Returns true if all the bits in the vec are set to zero/false.
     pub fn all_false(&self) -> bool {
         let mut len = self.len();
         if len == 0 {
-            return true
+            return true;
         }
 
         if self.is_inline() {
@@ -430,15 +437,15 @@ impl SmallBitVec {
             for &storage in self.buffer() {
                 if len >= bits_per_storage() {
                     if storage != 0 {
-                        return false
+                        return false;
                     }
                     len -= bits_per_storage();
                 } else {
                     let mask = (1 << len) - 1;
                     if storage & mask != 0 {
-                        return false
+                        return false;
                     }
-                    break
+                    break;
                 }
             }
             true
@@ -449,7 +456,7 @@ impl SmallBitVec {
     pub fn all_true(&self) -> bool {
         let mut len = self.len();
         if len == 0 {
-            return true
+            return true;
         }
 
         if self.is_inline() {
@@ -459,15 +466,15 @@ impl SmallBitVec {
             for &storage in self.buffer() {
                 if len >= bits_per_storage() {
                     if storage != !0 {
-                        return false
+                        return false;
                     }
                     len -= bits_per_storage();
                 } else {
                     let mask = (1 << len) - 1;
                     if storage & mask != mask {
-                        return false
+                        return false;
                     }
-                    break
+                    break;
                 }
             }
             true
@@ -480,7 +487,7 @@ impl SmallBitVec {
     fn reallocate(&mut self, cap: usize) {
         let old_cap = self.capacity();
         if cap <= old_cap {
-            return
+            return;
         }
         assert!(self.len() <= cap);
 
@@ -492,9 +499,7 @@ impl SmallBitVec {
             let new_alloc_len = header_len() + new_buffer_len;
 
             let old_ptr = self.header_raw() as *mut Storage;
-            let mut v = unsafe {
-                Vec::from_raw_parts(old_ptr, old_alloc_len, old_alloc_len)
-            };
+            let mut v = unsafe { Vec::from_raw_parts(old_ptr, old_alloc_len, old_alloc_len) };
             v.resize(new_alloc_len, 0);
             v.shrink_to_fit();
             self.data = v.as_ptr() as usize | HEAP_FLAG;
@@ -518,7 +523,7 @@ impl SmallBitVec {
     pub fn heap_ptr(&self) -> Option<*const usize> {
         match self.is_heap() {
             true => Some((self.data & !HEAP_FLAG) as *const Storage),
-            false => None
+            false => None,
         }
     }
 
@@ -571,7 +576,9 @@ impl SmallBitVec {
 impl fmt::Debug for SmallBitVec {
     #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_list().entries(self.iter().map(|b| b as u8)).finish()
+        fmt.debug_list()
+            .entries(self.iter().map(|b| b as u8))
+            .finish()
     }
 }
 
@@ -579,12 +586,12 @@ impl PartialEq for SmallBitVec {
     fn eq(&self, other: &Self) -> bool {
         // Compare by inline representation
         if self.is_inline() && other.is_inline() {
-            return self.data == other.data
+            return self.data == other.data;
         }
 
         let len = self.len();
         if len != other.len() {
-            return false
+            return false;
         }
 
         // Compare by heap representation
@@ -596,16 +603,16 @@ impl PartialEq for SmallBitVec {
             let remainder = len % bits_per_storage();
 
             if buf0[..full_blocks] != buf1[..full_blocks] {
-                return false
+                return false;
             }
 
             if remainder != 0 {
                 let mask = (1 << remainder) - 1;
                 if buf0[full_blocks] & mask != buf1[full_blocks] & mask {
-                    return false
+                    return false;
                 }
             }
-            return true
+            return true;
         }
 
         // Representations differ; fall back to bit-by-bit comparison
@@ -631,21 +638,19 @@ impl Drop for SmallBitVec {
 impl Clone for SmallBitVec {
     fn clone(&self) -> Self {
         if self.is_inline() {
-            return SmallBitVec { data: self.data }
+            return SmallBitVec { data: self.data };
         }
 
         let buffer_len = self.header().buffer_len;
         let alloc_len = header_len() + buffer_len;
         let ptr = self.header_raw() as *mut Storage;
-        let raw_allocation = unsafe {
-            slice::from_raw_parts(ptr, alloc_len)
-        };
+        let raw_allocation = unsafe { slice::from_raw_parts(ptr, alloc_len) };
 
         let v = raw_allocation.to_vec();
         let header_ptr = v.as_ptr() as *mut Header;
         forget(v);
         SmallBitVec {
-            data: (header_ptr as usize) | HEAP_FLAG
+            data: (header_ptr as usize) | HEAP_FLAG,
         }
     }
 }
@@ -676,7 +681,7 @@ impl hash::Hash for SmallBitVec {
 
 impl Extend<bool> for SmallBitVec {
     #[inline]
-    fn extend<I: IntoIterator<Item=bool>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = bool>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
         let (min, _) = iter.size_hint();
@@ -691,7 +696,7 @@ impl Extend<bool> for SmallBitVec {
 
 impl FromIterator<bool> for SmallBitVec {
     #[inline]
-    fn from_iter<I: IntoIterator<Item=bool>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = bool>>(iter: I) -> Self {
         let mut v = SmallBitVec::new();
         v.extend(iter);
         v
@@ -704,7 +709,10 @@ impl IntoIterator for SmallBitVec {
 
     #[inline]
     fn into_iter(self) -> IntoIter {
-        IntoIter { range: 0..self.len(), vec: self }
+        IntoIter {
+            range: 0..self.len(),
+            vec: self,
+        }
     }
 }
 
@@ -733,7 +741,9 @@ impl Iterator for IntoIter {
 
     #[inline]
     fn next(&mut self) -> Option<bool> {
-        self.range.next().map(|i| unsafe { self.vec.get_unchecked(i) })
+        self.range
+            .next()
+            .map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 
     #[inline]
@@ -745,7 +755,9 @@ impl Iterator for IntoIter {
 impl DoubleEndedIterator for IntoIter {
     #[inline]
     fn next_back(&mut self) -> Option<bool> {
-        self.range.next_back().map(|i| unsafe { self.vec.get_unchecked(i) })
+        self.range
+            .next_back()
+            .map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 }
 
@@ -766,7 +778,9 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<bool> {
-        self.range.next().map(|i| unsafe { self.vec.get_unchecked(i) })
+        self.range
+            .next()
+            .map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 
     #[inline]
@@ -778,7 +792,9 @@ impl<'a> Iterator for Iter<'a> {
 impl<'a> DoubleEndedIterator for Iter<'a> {
     #[inline]
     fn next_back(&mut self) -> Option<bool> {
-        self.range.next_back().map(|i| unsafe { self.vec.get_unchecked(i) })
+        self.range
+            .next_back()
+            .map(|i| unsafe { self.vec.get_unchecked(i) })
     }
 }
 
