@@ -521,9 +521,10 @@ impl SmallBitVec {
     ///
     /// The layout of the data at this allocation is a private implementation detail.
     pub fn heap_ptr(&self) -> Option<*const usize> {
-        match self.is_heap() {
-            true => Some((self.data & !HEAP_FLAG) as *const Storage),
-            false => None,
+        if self.is_heap() {
+            Some((self.data & !HEAP_FLAG) as *const Storage)
+        } else {
+            None
         }
     }
 
@@ -579,6 +580,12 @@ impl fmt::Debug for SmallBitVec {
         fmt.debug_list()
             .entries(self.iter().map(|b| b as u8))
             .finish()
+    }
+}
+
+impl Default for SmallBitVec {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
