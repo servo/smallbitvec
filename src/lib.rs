@@ -416,6 +416,17 @@ impl SmallBitVec {
         Iter { vec: self, range: 0..self.len() }
     }
 
+    /// Returns an immutable view of a range of bits from this vec.
+    /// ```
+    /// #[macro_use] extern crate smallbitvec;
+    /// let v = sbvec![true, false, true];
+    /// let r = v.range(1..3);
+    /// assert_eq!(r[1], true);
+    /// ```
+    pub fn range(&self, range: Range<usize>) -> VecRange {
+        VecRange { vec: &self, range }
+    }
+
     /// Returns true if all the bits in the vec are set to zero/false.
     pub fn all_false(&self) -> bool {
         let mut len = self.len();
@@ -783,3 +794,46 @@ impl<'a> DoubleEndedIterator for Iter<'a> {
 }
 
 impl<'a> ExactSizeIterator for Iter<'a> {}
+
+/// An immutable view of a range of bits from a borrowed SmallBitVec.
+///
+/// Returned from [`SmallBitVec::range`][1].
+///
+/// [1]: struct.SmallBitVec.html#method.range
+#[derive(Debug, Clone)]
+pub struct VecRange<'a> {
+    vec: &'a SmallBitVec,
+    range: Range<usize>,
+}
+
+impl<'a> Iterator for VecRange<'a> {
+    type Item = bool;
+
+    #[inline]
+    fn next(&mut self) -> Option<bool> {
+        self.range.next().and_then(|i| self.vec.get(i))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.range.size_hint()
+    }
+}
+
+impl<'a> DoubleEndedIterator for VecRange<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<bool> {
+        self.range.next_back().and_then(|i| self.vec.get(i))
+    }
+}
+
+impl<'a> ExactSizeIterator for VecRange<'a> {}
+
+impl<'a> Index<usize> for VecRange<'a> {
+    type Output = bool;
+
+    #[inline]
+    fn index(&self, i: usize) -> &bool {
+        &self.vec[i + self.range.start]
+    }
+}

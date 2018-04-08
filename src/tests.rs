@@ -182,6 +182,22 @@ fn iter_back() {
 }
 
 #[test]
+fn range() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+    v.push(false);
+    v.push(false);
+    v.push(true);
+
+    let mut r = v.range(0..3);
+    assert_eq!(r.next(), Some(true));
+    assert_eq!(r.next(), Some(false));
+    assert_eq!(r.next(), Some(false));
+    assert_eq!(r.next(), None);
+    assert_eq!(r[0], true);
+}
+
+#[test]
 fn debug() {
     let mut v = SmallBitVec::new();
     v.push(true);
