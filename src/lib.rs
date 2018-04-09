@@ -77,32 +77,32 @@ pub struct SmallBitVec {
 }
 
 /// Total number of bits per word.
-fn inline_bits() -> u32 {
-    size_of::<usize>() as u32 * 8
+fn inline_bits() -> usize {
+    size_of::<usize>() * 8
 }
 
 /// For an inline vector, all bits except two can be used as storage capacity:
 ///
 /// - The rightmost bit is set to zero to signal an inline vector.
 /// - The position of the rightmost nonzero bit encodes the length.
-fn inline_capacity() -> u32 {
+fn inline_capacity() -> usize {
     inline_bits() - 2
 }
 
 /// Left shift amount to access the nth bit
-fn inline_shift(n: u32) -> u32 {
+fn inline_shift(n: usize) -> usize {
     debug_assert!(n <= inline_capacity());
     // The storage starts at the leftmost bit.
     inline_bits() - 1 - n
 }
 
 /// An inline vector with the nth bit set.
-fn inline_index(n: u32) -> usize {
+fn inline_index(n: usize) -> usize {
     1 << inline_shift(n)
 }
 
 /// An inline vector with the leftmost `n` bits set.
-fn inline_ones(n: u32) -> usize {
+fn inline_ones(n: usize) -> usize {
     if n == 0 {
         0
     } else {
@@ -115,12 +115,12 @@ fn inline_ones(n: u32) -> usize {
 const HEAP_FLAG: usize = 1;
 
 /// The allocation will contain a `Header` followed by a [Storage] buffer.
-type Storage = u32;
+type Storage = usize;
 
 /// The number of bits in one `Storage`.
 #[inline(always)]
-fn bits_per_storage() -> u32 {
-    size_of::<Storage>() as u32 * 8
+fn bits_per_storage() -> usize {
+    size_of::<Storage>() * 8
 }
 
 /// Data stored at the start of the heap allocation.
@@ -130,14 +130,14 @@ struct Header {
     /// The number of bits in this bit vector.
     len: Storage,
 
-    /// The number of elements in the [u32] buffer that follows this header.
+    /// The number of elements in the [usize] buffer that follows this header.
     buffer_len: Storage,
 }
 
 impl Header {
     /// Create a heap allocation with enough space for a header,
     /// plus a buffer of at least `cap` bits, each initialized to `val`.
-    fn new(cap: u32, len: u32, val: bool) -> *mut Header {
+    fn new(cap: usize, len: usize, val: bool) -> *mut Header {
         let alloc_len = header_len() + buffer_len(cap);
         let init = if val { !0 } else { 0 };
 
@@ -150,7 +150,7 @@ impl Header {
 
         unsafe {
             (*header_ptr).len = len;
-            (*header_ptr).buffer_len = buffer_len as u32;
+            (*header_ptr).buffer_len = buffer_len;
         }
         header_ptr
     }
@@ -162,8 +162,8 @@ fn header_len() -> usize {
 }
 
 /// The minimum number of `Storage` elements to hold at least `cap` bits.
-fn buffer_len(cap: u32) -> usize {
-    ((cap + bits_per_storage() - 1) / bits_per_storage()) as usize
+fn buffer_len(cap: usize) -> usize {
+    (cap + bits_per_storage() - 1) / bits_per_storage()
 }
 
 impl SmallBitVec {
@@ -176,7 +176,7 @@ impl SmallBitVec {
     }
 
     /// Create a vector containing `len` bits, each set to `val`.
-    pub fn from_elem(len: u32, val: bool) -> SmallBitVec {
+    pub fn from_elem(len: usize, val: bool) -> SmallBitVec {
         if len <= inline_capacity() {
             return SmallBitVec {
                 data: if val {
@@ -194,7 +194,7 @@ impl SmallBitVec {
 
     /// Create an empty vector with enough storage pre-allocated to store at least `cap` bits
     /// without resizing.
-    pub fn with_capacity(cap: u32) -> SmallBitVec {
+    pub fn with_capacity(cap: usize) -> SmallBitVec {
         // Use inline storage if possible.
         if cap <= inline_capacity() {
             return SmallBitVec::new()
@@ -209,11 +209,11 @@ impl SmallBitVec {
 
     /// The number of bits stored in this bit vector.
     #[inline]
-    pub fn len(&self) -> u32 {
+    pub fn len(&self) -> usize {
         if self.is_inline() {
             // The rightmost nonzero bit is a sentinel.  All bits to the left of
             // the sentinel bit are the elements of the bit vector.
-            inline_bits() - self.data.trailing_zeros() - 1
+            inline_bits() - self.data.trailing_zeros() as usize - 1
         } else {
             self.header().len
         }
@@ -227,7 +227,7 @@ impl SmallBitVec {
 
     /// The number of bits that can be stored in this bit vector without re-allocating.
     #[inline]
-    pub fn capacity(&self) -> u32 {
+    pub fn capacity(&self) -> usize {
         if self.is_inline() {
             inline_capacity()
         } else {
@@ -237,7 +237,7 @@ impl SmallBitVec {
 
     /// Get the nth bit in this bit vector.  Panics if the index is out of bounds.
     #[inline]
-    pub fn get(&self, n: u32) -> Option<bool> {
+    pub fn get(&self, n: usize) -> Option<bool> {
         if n < self.len() {
             Some(unsafe { self.get_unchecked(n) })
         } else {
@@ -246,25 +246,25 @@ impl SmallBitVec {
     }
 
     /// Get the nth bit in this bit vector, without bounds checks.
-    pub unsafe fn get_unchecked(&self, n: u32) -> bool {
+    pub unsafe fn get_unchecked(&self, n: usize) -> bool {
         if self.is_inline() {
             self.data & inline_index(n) != 0
         } else {
             let buffer = self.buffer();
-            let i = (n / bits_per_storage()) as usize;
+            let i = n / bits_per_storage();
             let offset = n % bits_per_storage();
             *buffer.get_unchecked(i) & (1 << offset) != 0
         }
     }
 
     /// Set the nth bit in this bit vector to `val`.  Panics if the index is out of bounds.
-    pub fn set(&mut self, n: u32, val: bool) {
+    pub fn set(&mut self, n: usize, val: bool) {
         assert!(n < self.len(), "Index {} out of bounds", n);
         unsafe { self.set_unchecked(n, val); }
     }
 
     /// Set the nth bit in this bit vector to `val`, without bounds checks.
-    pub unsafe fn set_unchecked(&mut self, n: u32, val: bool) {
+    pub unsafe fn set_unchecked(&mut self, n: usize, val: bool) {
         if self.is_inline() {
             if val {
                 self.data |= inline_index(n);
@@ -273,7 +273,7 @@ impl SmallBitVec {
             }
         } else {
             let buffer = self.buffer_mut();
-            let i = (n / bits_per_storage()) as usize;
+            let i = n / bits_per_storage();
             let offset = n % bits_per_storage();
             if val {
                 *buffer.get_unchecked_mut(i) |= 1 << offset;
@@ -331,7 +331,7 @@ impl SmallBitVec {
     /// Remove the bit at index `idx`, shifting all later bits toward the front.
     ///
     /// Panics if the index is out of bounds.
-    pub fn remove(&mut self, idx: u32) {
+    pub fn remove(&mut self, idx: usize) {
         let len = self.len();
         assert!(idx < len, "Index {} out of bounds", idx);
 
@@ -341,7 +341,7 @@ impl SmallBitVec {
             let new_vals = (self.data & mask) << 1;
             self.data = (self.data & !mask) | (new_vals & mask);
         } else {
-            let first = (idx / bits_per_storage()) as usize;
+            let first = idx / bits_per_storage();
             let offset = idx % bits_per_storage();
             let count = buffer_len(len);
             {
@@ -354,7 +354,7 @@ impl SmallBitVec {
             // Shift bits in subsequent storage blocks.
             for i in (first + 1)..count {
                 // Move the first bit into the previous block.
-                let bit_idx = i as u32 * bits_per_storage();
+                let bit_idx = i * bits_per_storage();
                 unsafe {
                     let first_bit = self.get_unchecked(bit_idx);
                     self.set_unchecked(bit_idx - 1, first_bit);
@@ -380,10 +380,10 @@ impl SmallBitVec {
     ///
     /// May reserve more space than requested, to avoid frequent reallocations.
     ///
-    /// Panics if the new capacity overflows `u32`.
+    /// Panics if the new capacity overflows `usize`.
     ///
     /// Re-allocates only if `self.capacity() < self.len() + additional`.
-    pub fn reserve(&mut self, additional: u32) {
+    pub fn reserve(&mut self, additional: usize) {
         let old_cap = self.capacity();
         let new_cap = self.len().checked_add(additional).expect("capacity overflow");
         if new_cap <= old_cap {
@@ -398,7 +398,7 @@ impl SmallBitVec {
     ///
     /// If this makes the vector longer, then the values of its new elements
     /// are not specified.
-    unsafe fn set_len(&mut self, len: u32) {
+    unsafe fn set_len(&mut self, len: usize) {
         debug_assert!(len <= self.capacity());
         if self.is_inline() {
             let sentinel = inline_index(len);
@@ -476,7 +476,7 @@ impl SmallBitVec {
     /// Resize the vector to have capacity for at least `cap` bits.
     ///
     /// `cap` must be at least as large as the length of the vector.
-    fn reallocate(&mut self, cap: u32) {
+    fn reallocate(&mut self, cap: usize) {
         let old_cap = self.capacity();
         if cap <= old_cap {
             return
@@ -484,7 +484,7 @@ impl SmallBitVec {
         assert!(self.len() <= cap);
 
         if self.is_heap() {
-            let old_buffer_len = self.header().buffer_len as usize;
+            let old_buffer_len = self.header().buffer_len;
             let new_buffer_len = buffer_len(cap);
 
             let old_alloc_len = header_len() + old_buffer_len;
@@ -499,7 +499,7 @@ impl SmallBitVec {
             self.data = v.as_ptr() as usize | HEAP_FLAG;
             forget(v);
 
-            self.header_mut().buffer_len = new_buffer_len as u32;
+            self.header_mut().buffer_len = new_buffer_len;
         } else {
             let old_self = replace(self, SmallBitVec::with_capacity(cap));
             unsafe {
@@ -514,7 +514,7 @@ impl SmallBitVec {
     /// If the vector owns a heap allocation, returns a pointer to the start of the allocation.
     ///
     /// The layout of the data at this allocation is a private implementation detail.
-    pub fn heap_ptr(&self) -> Option<*const u32> {
+    pub fn heap_ptr(&self) -> Option<*const usize> {
         match self.is_heap() {
             true => Some((self.data & !HEAP_FLAG) as *const Storage),
             false => None
@@ -549,7 +549,7 @@ impl SmallBitVec {
     fn buffer_raw(&self) -> *mut [Storage] {
         unsafe {
             let header_ptr = self.header_raw();
-            let buffer_len = (*header_ptr).buffer_len as usize;
+            let buffer_len = (*header_ptr).buffer_len;
             let buffer_ptr = (header_ptr as *mut Storage)
                 .offset((size_of::<Header>() / size_of::<Storage>()) as isize);
             slice::from_raw_parts_mut(buffer_ptr, buffer_len)
@@ -591,7 +591,7 @@ impl PartialEq for SmallBitVec {
             let buf0 = self.buffer();
             let buf1 = other.buffer();
 
-            let full_blocks = (len / bits_per_storage()) as usize;
+            let full_blocks = len / bits_per_storage();
             let remainder = len % bits_per_storage();
 
             if buf0[..full_blocks] != buf1[..full_blocks] {
@@ -620,7 +620,7 @@ impl Drop for SmallBitVec {
             unsafe {
                 let header_ptr = self.header_raw();
                 let alloc_ptr = header_ptr as *mut Storage;
-                let alloc_len = header_len() + (*header_ptr).buffer_len as usize;
+                let alloc_len = header_len() + (*header_ptr).buffer_len;
                 Vec::from_raw_parts(alloc_ptr, alloc_len, alloc_len);
             }
         }
@@ -633,7 +633,7 @@ impl Clone for SmallBitVec {
             return SmallBitVec { data: self.data }
         }
 
-        let buffer_len = self.header().buffer_len as usize;
+        let buffer_len = self.header().buffer_len;
         let alloc_len = header_len() + buffer_len;
         let ptr = self.header_raw() as *mut Storage;
         let raw_allocation = unsafe {
@@ -654,8 +654,8 @@ impl Index<usize> for SmallBitVec {
 
     #[inline]
     fn index(&self, i: usize) -> &bool {
-        assert!(i < self.len() as usize, "index out of range");
-        if self.get(i as u32).unwrap() {
+        assert!(i < self.len(), "index out of range");
+        if self.get(i).unwrap() {
             &true
         } else {
             &false
@@ -679,8 +679,8 @@ impl Extend<bool> for SmallBitVec {
         let iter = iter.into_iter();
 
         let (min, _) = iter.size_hint();
-        assert!(min <= u32::max_value() as usize, "capacity overflow");
-        self.reserve(min as u32);
+        assert!(min <= usize::max_value(), "capacity overflow");
+        self.reserve(min);
 
         for element in iter {
             self.push(element)
@@ -724,7 +724,7 @@ impl<'a> IntoIterator for &'a SmallBitVec {
 /// [1]: struct.SmallBitVec.html#method.into_iter
 pub struct IntoIter {
     vec: SmallBitVec,
-    range: Range<u32>,
+    range: Range<usize>,
 }
 
 impl Iterator for IntoIter {
@@ -757,7 +757,7 @@ impl ExactSizeIterator for IntoIter {}
 /// [1]: struct.SmallBitVec.html#method.iter
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
-    range: Range<u32>,
+    range: Range<usize>,
 }
 
 impl<'a> Iterator for Iter<'a> {
