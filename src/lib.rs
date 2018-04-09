@@ -23,6 +23,48 @@ use std::mem::{forget, replace, size_of};
 use std::ops::{Range, Index};
 use std::slice;
 
+/// Creates a [`SmallBitVec`] containing the arguments.
+///
+/// `sbvec!` allows `SmallBitVec`s to be defined with the same syntax as array expressions.
+/// There are two forms of this macro:
+///
+/// - Create a [`SmallBitVec`] containing a given list of elements:
+///
+/// ```
+/// # #[macro_use] extern crate smallbitvec;
+/// # use smallbitvec::SmallBitVec;
+/// # fn main() {
+/// let v = sbvec![true, false, true];
+/// assert_eq!(v[0], true);
+/// assert_eq!(v[1], false);
+/// assert_eq!(v[2], true);
+/// # }
+/// ```
+///
+/// - Create a [`SmallBitVec`] from a given element and size:
+///
+/// ```
+/// # #[macro_use] extern crate smallbitvec;
+/// # use smallbitvec::SmallBitVec;
+/// # fn main() {
+/// let v = sbvec![true; 3];
+/// assert!(v.into_iter().eq(vec![true, true, true].into_iter()));
+/// # }
+/// ```
+
+#[macro_export]
+macro_rules! sbvec {
+    ($elem:expr; $n:expr) => (
+        $crate::SmallBitVec::from_elem($n, $elem)
+    );
+    ($($x:expr),*) => (
+        [$($x),*].iter().cloned().collect::<$crate::SmallBitVec>()
+    );
+    ($($x:expr,)*) => (
+        sbvec![$($x),*]
+    );
+}
+
 #[cfg(test)]
 mod tests;
 
@@ -195,9 +237,12 @@ impl SmallBitVec {
 
     /// Get the nth bit in this bit vector.  Panics if the index is out of bounds.
     #[inline]
-    pub fn get(&self, n: u32) -> bool {
-        assert!(n < self.len(), "Index {} out of bounds", n);
-        unsafe { self.get_unchecked(n) }
+    pub fn get(&self, n: u32) -> Option<bool> {
+        if n < self.len() {
+            Some(unsafe { self.get_unchecked(n) })
+        } else {
+            None
+        }
     }
 
     /// Get the nth bit in this bit vector, without bounds checks.
@@ -246,7 +291,7 @@ impl SmallBitVec {
     /// v.push(true);
     ///
     /// assert_eq!(v.len(), 1);
-    /// assert_eq!(v.get(0), true);
+    /// assert_eq!(v.get(0), Some(true));
     /// ```
     #[inline]
     pub fn push(&mut self, val: bool) {
@@ -610,7 +655,11 @@ impl Index<usize> for SmallBitVec {
     #[inline]
     fn index(&self, i: usize) -> &bool {
         assert!(i < self.len() as usize, "index out of range");
-        if self.get(i as u32) { &true } else { &false }
+        if self.get(i as u32).unwrap() {
+            &true
+        } else {
+            &false
+        }
     }
 }
 
