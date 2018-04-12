@@ -235,7 +235,7 @@ impl SmallBitVec {
         }
     }
 
-    /// Get the nth bit in this bit vector.  Panics if the index is out of bounds.
+    /// Get the nth bit in this bit vector.
     #[inline]
     pub fn get(&self, n: usize) -> Option<bool> {
         if n < self.len() {
