@@ -79,20 +79,20 @@ fn push_many() {
 
     for i in 0..500 {
         assert_eq!(v.get(i).unwrap(), (i % 3 == 0), "{}", i);
-        assert_eq!(v[i as usize], v.get(i).unwrap());
+        assert_eq!(v[i], v.get(i).unwrap());
     }
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index out of range")]
 fn index_out_of_bounds() {
     let v = SmallBitVec::new();
     v[0];
 }
 
 #[test]
-#[should_panic]
-fn index_u32_overflow() {
+#[should_panic(expected = "index out of range")]
+fn index_out_of_bounds_nonempty() {
     let mut v = SmallBitVec::new();
     v.push(true);
     v[1 << 32];
