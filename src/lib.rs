@@ -328,12 +328,12 @@ impl SmallBitVec {
         }
     }
 
-    /// Remove the bit at index `idx`, shifting all later bits toward the front.
+    /// Remove and return the bit at index `idx`, shifting all later bits toward the front.
     ///
     /// Panics if the index is out of bounds.
-    pub fn remove(&mut self, idx: usize) {
+    pub fn remove(&mut self, idx: usize) -> bool {
         let len = self.len();
-        assert!(idx < len, "Index {} out of bounds", idx);
+        let val = self[idx];
 
         if self.is_inline() {
             // Shift later bits, including the length bit, toward the front.
@@ -367,6 +367,7 @@ impl SmallBitVec {
                 self.set_len(len - 1);
             }
         }
+        val
     }
 
     /// Remove all elements from the vector, without deallocating its buffer.

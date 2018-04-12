@@ -213,9 +213,9 @@ fn remove() {
     v.push(false);
     v.push(true);
 
-    v.remove(1);
+    assert_eq!(v.remove(1), true);
     assert_eq!(format!("{:?}", v), "[0, 0, 0, 1]");
-    v.remove(0);
+    assert_eq!(v.remove(0), false);
     assert_eq!(format!("{:?}", v), "[0, 0, 1]");
     v.remove(2);
     assert_eq!(format!("{:?}", v), "[0, 0]");
