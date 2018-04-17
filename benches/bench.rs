@@ -17,11 +17,11 @@ extern crate smallbitvec;
 extern crate test;
 
 use bit_vec::BitVec;
-use rand::{Rng, weak_rng, XorShiftRng};
+use rand::{weak_rng, Rng, XorShiftRng};
 use smallbitvec::SmallBitVec;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
-const BENCH_BITS : usize = 1 << 14;
+const BENCH_BITS: usize = 1 << 14;
 const USIZE_BITS: usize = ::std::mem::size_of::<usize>() * 8;
 
 fn rng() -> XorShiftRng {
@@ -104,36 +104,28 @@ fn bench_bit_set_small_sbv(b: &mut Bencher) {
 fn bench_bit_vec_small_eq_bv(b: &mut Bencher) {
     let x = BitVec::from_elem(USIZE_BITS, false);
     let y = BitVec::from_elem(USIZE_BITS, false);
-    b.iter(|| {
-        x == y
-    });
+    b.iter(|| x == y);
 }
 
 #[bench]
 fn bench_bit_vec_small_eq_sbv(b: &mut Bencher) {
     let x = SmallBitVec::from_elem(USIZE_BITS, false);
     let y = SmallBitVec::from_elem(USIZE_BITS, false);
-    b.iter(|| {
-        x == y
-    });
+    b.iter(|| x == y);
 }
 
 #[bench]
 fn bench_bit_vec_big_eq_bv(b: &mut Bencher) {
     let x = BitVec::from_elem(BENCH_BITS, false);
     let y = BitVec::from_elem(BENCH_BITS, false);
-    b.iter(|| {
-        x == y
-    });
+    b.iter(|| x == y);
 }
 
 #[bench]
 fn bench_bit_vec_big_eq_sbv(b: &mut Bencher) {
     let x = SmallBitVec::from_elem(BENCH_BITS, false);
     let y = SmallBitVec::from_elem(BENCH_BITS, false);
-    b.iter(|| {
-        x == y
-    });
+    b.iter(|| x == y);
 }
 
 #[bench]
@@ -192,9 +184,7 @@ fn bench_bit_vec_big_iter_sbv(b: &mut Bencher) {
 fn bench_from_elem_bv(b: &mut Bencher) {
     let cap = black_box(BENCH_BITS);
     let bit = black_box(true);
-    b.iter(|| {
-        BitVec::from_elem(cap, bit)
-    });
+    b.iter(|| BitVec::from_elem(cap, bit));
     b.bytes = cap as u64 / 8;
 }
 
@@ -202,9 +192,7 @@ fn bench_from_elem_bv(b: &mut Bencher) {
 fn bench_from_elem_sbv(b: &mut Bencher) {
     let cap = black_box(BENCH_BITS);
     let bit = black_box(true);
-    b.iter(|| {
-        SmallBitVec::from_elem(cap, bit)
-    });
+    b.iter(|| SmallBitVec::from_elem(cap, bit));
     b.bytes = cap as u64 / 8;
 }
 
