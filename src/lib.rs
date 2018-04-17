@@ -431,6 +431,7 @@ impl SmallBitVec {
     /// assert_eq!(r[1], true);
     /// ```
     pub fn range(&self, range: Range<usize>) -> VecRange {
+        assert!(range.end <= self.len(), "range out of bounds");
         VecRange { vec: &self, range }
     }
 

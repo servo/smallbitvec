@@ -204,6 +204,15 @@ fn range() {
 }
 
 #[test]
+#[should_panic(expected = "range out of bounds")]
+fn range_oob() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+
+    v.range(0..2);
+}
+
+#[test]
 fn debug() {
     let mut v = SmallBitVec::new();
     v.push(true);
