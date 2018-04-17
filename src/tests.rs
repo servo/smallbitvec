@@ -188,6 +188,43 @@ fn iter_back() {
 }
 
 #[test]
+fn range() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+    v.push(false);
+    v.push(false);
+    v.push(true);
+
+    let r = v.range(0..2);
+    let mut ri = r.iter();
+    assert_eq!(ri.next(), Some(true));
+    assert_eq!(ri.next(), Some(false));
+    assert_eq!(ri.next(), None);
+    assert_eq!(r[0], true);
+}
+
+#[test]
+#[should_panic(expected = "range out of bounds")]
+fn range_oob() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+
+    v.range(0..2);
+}
+
+#[test]
+#[should_panic(expected = "index out of range")]
+fn range_index_oob() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+    v.push(false);
+    v.push(true);
+
+    let r = v.range(1..2);
+    r[1];
+}
+
+#[test]
 fn debug() {
     let mut v = SmallBitVec::new();
     v.push(true);
