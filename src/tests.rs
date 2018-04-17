@@ -195,11 +195,11 @@ fn range() {
     v.push(false);
     v.push(true);
 
-    let mut r = v.range(0..3);
-    assert_eq!(r.next(), Some(true));
-    assert_eq!(r.next(), Some(false));
-    assert_eq!(r.next(), Some(false));
-    assert_eq!(r.next(), None);
+    let r = v.range(0..2);
+    let mut ri = r.iter();
+    assert_eq!(ri.next(), Some(true));
+    assert_eq!(ri.next(), Some(false));
+    assert_eq!(ri.next(), None);
     assert_eq!(r[0], true);
 }
 
@@ -210,6 +210,18 @@ fn range_oob() {
     v.push(true);
 
     v.range(0..2);
+}
+
+#[test]
+#[should_panic(expected = "index out of range")]
+fn range_index_oob() {
+    let mut v = SmallBitVec::new();
+    v.push(true);
+    v.push(false);
+    v.push(true);
+
+    let r = v.range(1..2);
+    r[1];
 }
 
 #[test]

@@ -830,34 +830,22 @@ pub struct VecRange<'a> {
     range: Range<usize>,
 }
 
-impl<'a> Iterator for VecRange<'a> {
-    type Item = bool;
-
-    #[inline]
-    fn next(&mut self) -> Option<bool> {
-        self.range.next().and_then(|i| self.vec.get(i))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.range.size_hint()
+impl<'a> VecRange<'a> {
+    pub fn iter(&self) -> Iter<'a> {
+        Iter {
+            vec: self.vec,
+            range: self.range.clone(),
+        }
     }
 }
-
-impl<'a> DoubleEndedIterator for VecRange<'a> {
-    #[inline]
-    fn next_back(&mut self) -> Option<bool> {
-        self.range.next_back().and_then(|i| self.vec.get(i))
-    }
-}
-
-impl<'a> ExactSizeIterator for VecRange<'a> {}
 
 impl<'a> Index<usize> for VecRange<'a> {
     type Output = bool;
 
     #[inline]
     fn index(&self, i: usize) -> &bool {
-        &self.vec[i + self.range.start]
+        let vec_i = i + self.range.start;
+        assert!(vec_i < self.range.end, "index out of range");
+        &self.vec[vec_i]
     }
 }
