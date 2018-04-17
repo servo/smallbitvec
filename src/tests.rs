@@ -53,11 +53,15 @@ fn with_capacity_heap() {
 fn set_len_inline() {
     let mut v = SmallBitVec::new();
     for i in 0..(inline_capacity() + 1) {
-        unsafe { v.set_len(i); }
+        unsafe {
+            v.set_len(i);
+        }
         assert_eq!(v.len(), i);
     }
     for i in (0..(inline_capacity() + 1)).rev() {
-        unsafe { v.set_len(i); }
+        unsafe {
+            v.set_len(i);
+        }
         assert_eq!(v.len(), i);
     }
 }
@@ -65,7 +69,9 @@ fn set_len_inline() {
 #[test]
 fn set_len_heap() {
     let mut v = SmallBitVec::with_capacity(500);
-    unsafe { v.set_len(30); }
+    unsafe {
+        v.set_len(30);
+    }
     assert_eq!(v.len(), 30);
 }
 
