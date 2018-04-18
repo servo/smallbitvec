@@ -14,6 +14,20 @@
 //! inline capacity, it will allocate a buffer on the heap.
 //!
 //! [`SmallBitVec`]: struct.SmallBitVec.html
+//!
+//! # Example
+//!
+//! ```
+//! extern crate smallbitvec;
+//! use smallbitvec::SmallBitVec;
+//!
+//! let mut v = SmallBitVec::new();
+//! v.push(true);
+//! v.push(false);
+//!
+//! assert_eq!(v[0], true);
+//! assert_eq!(v[1], false);
+//! ```
 
 use std::cmp::max;
 use std::fmt;
