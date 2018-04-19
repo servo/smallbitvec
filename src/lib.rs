@@ -18,7 +18,6 @@
 //! # Example
 //!
 //! ```
-//! extern crate smallbitvec;
 //! use smallbitvec::SmallBitVec;
 //!
 //! let mut v = SmallBitVec::new();
