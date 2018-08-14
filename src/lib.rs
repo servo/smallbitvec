@@ -468,6 +468,8 @@ impl SmallBitVec {
     }
 
     /// Returns true if all the bits in the vec are set to zero/false.
+    ///
+    /// On an empty vector, returns true.
     #[inline]
     pub fn all_false(&self) -> bool {
         let mut len = self.len();
@@ -498,6 +500,8 @@ impl SmallBitVec {
     }
 
     /// Returns true if all the bits in the vec are set to one/true.
+    ///
+    /// On an empty vector, returns true.
     #[inline]
     pub fn all_true(&self) -> bool {
         let mut len = self.len();
