@@ -531,6 +531,42 @@ impl SmallBitVec {
         }
     }
 
+    /// Shorten the vector, keeping the first `len` elements and dropping the rest.
+    ///
+    /// If `len` is greater than or equal to the vector's current length, this has no
+    /// effect.
+    ///
+    /// This does not re-allocate.
+    pub fn truncate(&mut self, len: usize) {
+        unsafe {
+            if len < self.len() {
+                self.set_len(len);
+            }
+        }
+    }
+
+    /// Resizes the vector so that its length is equal to `len`.
+    ///
+    /// If `len` is less than the current length, the vector simply truncated.
+    ///
+    /// If `len` is greater than the current length, `value` is appended to the
+    /// vector until its length equals `len`.
+    pub fn resize(&mut self, len: usize, value: bool) {
+        let old_len = self.len();
+
+        if len > old_len {
+            unsafe {
+                self.reallocate(len);
+                self.set_len(len);
+                for i in old_len..len {
+                    self.set(i, value);
+                }
+            }
+        } else {
+            self.truncate(len);
+        }
+    }
+
     /// Resize the vector to have capacity for at least `cap` bits.
     ///
     /// `cap` must be at least as large as the length of the vector.
