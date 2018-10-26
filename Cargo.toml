@@ -1,6 +1,6 @@
 [package]
 name = "smallbitvec"
-version = "2.1.1"
+version = "2.2.0"
 authors = ["Matt Brubeck <mbrubeck@limpet.net>"]
 license = "MIT / Apache-2.0"
 description = "A bit vector optimized for size and inline storage"
