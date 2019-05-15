@@ -279,6 +279,12 @@ impl SmallBitVec {
         }
     }
 
+    /// Get the last bit in this bit vector.
+    #[inline]
+    pub fn last(&self) -> Option<bool> {
+        self.len().checked_sub(1).map(|n| unsafe { self.get_unchecked(n) })
+    }
+
     /// Get the nth bit in this bit vector, without bounds checks.
     #[inline]
     pub unsafe fn get_unchecked(&self, n: usize) -> bool {
@@ -357,15 +363,11 @@ impl SmallBitVec {
     /// ```
     #[inline]
     pub fn pop(&mut self) -> Option<bool> {
-        let old_len = self.len();
-        if old_len == 0 {
-            return None;
-        }
-        unsafe {
-            let val = self.get_unchecked(old_len - 1);
-            self.set_len(old_len - 1);
-            Some(val)
-        }
+        self.len().checked_sub(1).map(|last| unsafe {
+            let val = self.get_unchecked(last);
+            self.set_len(last);
+            val
+        })
     }
 
     /// Remove and return the bit at index `idx`, shifting all later bits toward the front.
