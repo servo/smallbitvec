@@ -18,6 +18,8 @@
 //! # Example
 //!
 //! ```
+//! use std::prelude::v1::*;
+
 //! use smallbitvec::SmallBitVec;
 //!
 //! let mut v = SmallBitVec::new();
@@ -27,14 +29,21 @@
 //! assert_eq!(v[0], true);
 //! assert_eq!(v[1], false);
 //! ```
+ 
+#![cfg_attr(not(std), no_std)]
+#![no_std]
+
+extern crate no_std_compat as std;
+use std::prelude::v1::*;
 
 use std::cmp::max;
 use std::fmt;
-use std::hash;
 use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use std::mem::{forget, replace, size_of};
 use std::ops::{Index, Range};
 use std::slice;
+#[cfg(std)]
+use std::hash;
 
 /// Creates a [`SmallBitVec`] containing the arguments.
 ///
@@ -845,6 +854,7 @@ impl Index<usize> for SmallBitVec {
     }
 }
 
+#[cfg(std)]
 impl hash::Hash for SmallBitVec {
     #[inline]
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
