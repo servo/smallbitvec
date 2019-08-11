@@ -28,13 +28,19 @@
 //! assert_eq!(v[1], false);
 //! ```
 
-use std::cmp::max;
-use std::fmt;
-use std::hash;
-use std::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
-use std::mem::{forget, replace, size_of};
-use std::ops::{Index, Range};
-use std::slice;
+#![no_std]
+
+extern crate alloc;
+
+use alloc::{vec, vec::Vec, boxed::Box};
+
+use core::cmp::max;
+use core::fmt;
+use core::hash;
+use core::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
+use core::mem::{forget, replace, size_of};
+use core::ops::{Index, Range};
+use core::slice;
 
 /// Creates a [`SmallBitVec`] containing the arguments.
 ///
