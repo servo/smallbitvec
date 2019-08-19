@@ -35,6 +35,7 @@
 
 extern crate no_std_compat as std;
 use std::prelude::v1::*;
+use std::vec;
 
 use std::cmp::max;
 use std::fmt;
