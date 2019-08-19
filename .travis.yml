@@ -3,10 +3,8 @@ rust:
   - nightly
   - beta
   - stable
+  - 1.36.0
 script: |
   cargo build --verbose &&
-  cargo build --all-features --verbose &&
   cargo test --verbose &&
-  cargo test --all-features --verbose &&
-  ([ $TRAVIS_RUST_VERSION != nightly ] || cargo test --verbose --no-default-features) &&
   ([ $TRAVIS_RUST_VERSION != nightly ] || cargo bench --verbose bench)
