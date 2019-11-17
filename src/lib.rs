@@ -551,6 +551,58 @@ impl SmallBitVec {
         }
     }
 
+    /// Counts the number of bits in the vector that are set to one/true
+    pub fn count_ones(&self) -> usize {
+        let mut len = self.len();
+        if len == 0 {
+            return 0;
+        }
+
+        if self.is_inline() {
+            let mask = inline_ones(len);
+            (self.data & mask).count_ones() as usize
+        } else {
+            let mut count = 0;
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    count += storage.count_ones() as usize;
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    count += (storage & mask).count_ones() as usize;
+                    break;
+                }
+            }
+            count
+        }
+    }
+
+    /// Counts the number of bits in the vector that are set to zero/false
+    pub fn count_zeros(&self) -> usize {
+        let mut len = self.len();
+        if len == 0 {
+            return 0;
+        }
+
+        if self.is_inline() {
+            let mask = inline_ones(len);
+            (!self.data & mask).count_ones() as usize
+        } else {
+            let mut count = 0;
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    count += storage.count_zeros() as usize;
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    count += (!storage & mask).count_ones() as usize;
+                    break;
+                }
+            }
+            count
+        }
+    }
+
     /// Shorten the vector, keeping the first `len` elements and dropping the rest.
     ///
     /// If `len` is greater than or equal to the vector's current length, this has no

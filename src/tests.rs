@@ -365,3 +365,30 @@ fn resize() {
     assert_eq!(v.get(98).unwrap(), false);
     assert_eq!(v.get(99).unwrap(), false);
 }
+
+#[test]
+fn count_ones_zeros() {
+    let random_bits = &[
+        false, true, true, true, true, false, true, false,
+        true, true, false, false, false, false, true, false,
+        false, true, true, false, false, false, false, false,
+        false, true, false, false, false, false, false, true,
+        false, true, true, true, false, true, false, true,
+        true, true, false, false, true, false, false, false,
+        true, false, true, false, true, false, false, false,
+        false, true, false, true, false, false, true, true,
+        true, true, false, true, true, true, false, false,
+        false, false, true, false, true, true, false, false,
+    ];
+    let mut v = SmallBitVec::new();
+    for start in 0..random_bits.len() {
+        for i in 0..random_bits.len() {
+            let index = (start + i) % random_bits.len();
+            let bit = random_bits[index];
+            v.push(bit);
+            assert_eq!(v.iter().filter(|&b| b).count(), v.count_ones());
+            assert_eq!(v.iter().filter(|&b| !b).count(), v.count_zeros());
+        }
+        v.clear();
+    }
+}
