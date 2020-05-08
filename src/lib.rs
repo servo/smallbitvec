@@ -771,6 +771,7 @@ impl fmt::Debug for SmallBitVec {
 }
 
 impl Default for SmallBitVec {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -968,6 +969,7 @@ pub struct Iter<'a> {
 }
 
 impl<'a> Default for Iter<'a> {
+    #[inline]
     fn default() -> Self {
         const EMPTY: &'static SmallBitVec = &SmallBitVec::new();
         Self {
