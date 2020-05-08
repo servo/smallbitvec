@@ -365,3 +365,68 @@ fn resize() {
     assert_eq!(v.get(98).unwrap(), false);
     assert_eq!(v.get(99).unwrap(), false);
 }
+
+#[test]
+fn count_ones_zeros() {
+    let random_bits = &[
+        false, true, true, true, true, false, true, false,
+        true, true, false, false, false, false, true, false,
+        false, true, true, false, false, false, false, false,
+        false, true, false, false, false, false, false, true,
+        false, true, true, true, false, true, false, true,
+        true, true, false, false, true, false, false, false,
+        true, false, true, false, true, false, false, false,
+        false, true, false, true, false, false, true, true,
+        true, true, false, true, true, true, false, false,
+        false, false, true, false, true, true, false, false,
+    ];
+    let mut v = SmallBitVec::new();
+    for start in 0..random_bits.len() {
+        for i in 0..random_bits.len() {
+            let index = (start + i) % random_bits.len();
+            let bit = random_bits[index];
+            v.push(bit);
+            assert_eq!(v.iter().filter(|&b| b).count(), v.count_ones());
+            assert_eq!(v.iter().filter(|&b| !b).count(), v.count_zeros());
+        }
+        v.clear();
+    }
+}
+
+#[test]
+fn insert() {
+    let random_bits = &[
+        false, true, true, true, true, false, true, false,
+        true, true, false, false, false, false, true, false,
+        false, true, true, false, false, false, false, false,
+        false, true, false, false, false, false, false, true,
+        false, true, true, true, false, true, false, true,
+        true, true, false, false, true, false, false, false,
+        true, false, true, false, true, false, false, false,
+        false, true, false, true, false, false, true, true,
+        true, true, false, true, true, true, false, false,
+        false, false, true, false, true, true, false, false,
+    ];
+    let mut seed = 0xaaaaaaaau32;
+    let mut v0 = SmallBitVec::new();
+    let mut v1 = SmallBitVec::new();
+    for start in 0..random_bits.len() {
+        for i in 0..random_bits.len() {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            let bit = random_bits[(start + i) % random_bits.len()];
+            let index = (seed as usize) % (i + 1);
+            v0.insert(index, bit);
+            v1.push(false);
+            for j in (index..i).rev() {
+                let bit = v1.get(j).unwrap();
+                v1.set(j + 1, bit);
+            }
+            v1.set(index, bit);
+            assert_eq!(v0, v1);
+        }
+        v0.clear();
+        v1.clear();
+    }
+}

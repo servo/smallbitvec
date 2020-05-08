@@ -346,6 +346,43 @@ impl SmallBitVec {
         }
     }
 
+    /// Insert a bit at the given index, shifting all following values toward the back.
+    pub fn insert(&mut self, idx: usize, val: bool) {
+        let len = self.len();
+        assert!(idx <= len, "range out of bounds");
+        self.reserve(1);
+        if self.is_inline() {
+            let mask = inline_ones(idx);
+            let new_vals = (self.data & !mask) >> 1;
+            self.data = (self.data & mask) | new_vals;
+            if val {
+                self.data |= inline_index(idx);
+            }
+        } else {
+            let first = idx / bits_per_storage();
+            let offset = idx % bits_per_storage();
+            let count = buffer_len(len + 1);
+            for i in ((first + 1)..count).rev() {
+                self.buffer_mut()[i] <<= 1;
+                let bit_idx = i * bits_per_storage();
+                unsafe {
+                    let first_bit = self.get_unchecked(bit_idx - 1);
+                    self.set_unchecked(bit_idx, first_bit);
+                }
+            }
+            let buf = self.buffer_mut();
+            let mask = !0 << offset;
+            let new_vals = (buf[first] & mask) << 1;
+            buf[first] = (buf[first] & !mask) | new_vals;
+            if val {
+                buf[first] |= 1 << offset;
+            }
+            unsafe {
+                self.set_len(len + 1);
+            }
+        }
+    }
+
     /// Append a bit to the end of the vector.
     ///
     /// ```
@@ -560,6 +597,58 @@ impl SmallBitVec {
                 }
             }
             true
+        }
+    }
+
+    /// Counts the number of bits in the vector that are set to one/true
+    pub fn count_ones(&self) -> usize {
+        let mut len = self.len();
+        if len == 0 {
+            return 0;
+        }
+
+        if self.is_inline() {
+            let mask = inline_ones(len);
+            (self.data & mask).count_ones() as usize
+        } else {
+            let mut count = 0;
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    count += storage.count_ones() as usize;
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    count += (storage & mask).count_ones() as usize;
+                    break;
+                }
+            }
+            count
+        }
+    }
+
+    /// Counts the number of bits in the vector that are set to zero/false
+    pub fn count_zeros(&self) -> usize {
+        let mut len = self.len();
+        if len == 0 {
+            return 0;
+        }
+
+        if self.is_inline() {
+            let mask = inline_ones(len);
+            (!self.data & mask).count_ones() as usize
+        } else {
+            let mut count = 0;
+            for &storage in self.buffer() {
+                if len >= bits_per_storage() {
+                    count += storage.count_zeros() as usize;
+                    len -= bits_per_storage();
+                } else {
+                    let mask = (1 << len) - 1;
+                    count += (!storage & mask).count_ones() as usize;
+                    break;
+                }
+            }
+            count
         }
     }
 
