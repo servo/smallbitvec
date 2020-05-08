@@ -84,6 +84,18 @@ macro_rules! sbvec {
     );
 }
 
+
+// FIXME: replace this with `debug_assert!` when it’s usable in `const`:
+// * https://github.com/rust-lang/rust/issues/49146
+// * https://github.com/rust-lang/rust/issues/51999
+macro_rules! const_debug_assert_le {
+    ($left: ident <= $right: expr) =>  {
+        #[cfg(debug_assertions)]
+        // Causes an `index out of bounds` panic if `$left` is too large
+        [(); $right + 1][$left];
+    }
+}
+
 #[cfg(test)]
 mod tests;
 
@@ -97,7 +109,7 @@ pub struct SmallBitVec {
 
 /// Total number of bits per word.
 #[inline(always)]
-fn inline_bits() -> usize {
+const fn inline_bits() -> usize {
     size_of::<usize>() * 8
 }
 
@@ -106,21 +118,21 @@ fn inline_bits() -> usize {
 /// - The rightmost bit is set to zero to signal an inline vector.
 /// - The position of the rightmost nonzero bit encodes the length.
 #[inline(always)]
-fn inline_capacity() -> usize {
+const fn inline_capacity() -> usize {
     inline_bits() - 2
 }
 
 /// Left shift amount to access the nth bit
 #[inline(always)]
-fn inline_shift(n: usize) -> usize {
-    debug_assert!(n <= inline_capacity());
+const fn inline_shift(n: usize) -> usize {
+    const_debug_assert_le!(n <= inline_capacity());
     // The storage starts at the leftmost bit.
     inline_bits() - 1 - n
 }
 
 /// An inline vector with the nth bit set.
 #[inline(always)]
-fn inline_index(n: usize) -> usize {
+const fn inline_index(n: usize) -> usize {
     1 << inline_shift(n)
 }
 
@@ -207,7 +219,7 @@ pub enum InternalStorage {
 impl SmallBitVec {
     /// Create an empty vector.
     #[inline]
-    pub fn new() -> SmallBitVec {
+    pub const fn new() -> SmallBitVec {
         SmallBitVec {
             data: inline_index(0),
         }
@@ -953,6 +965,16 @@ impl ExactSizeIterator for IntoIter {}
 pub struct Iter<'a> {
     vec: &'a SmallBitVec,
     range: Range<usize>,
+}
+
+impl<'a> Default for Iter<'a> {
+    fn default() -> Self {
+        const EMPTY: &'static SmallBitVec = &SmallBitVec::new();
+        Self {
+            vec: EMPTY,
+            range: 0..0,
+        }
+    }
 }
 
 impl<'a> Iterator for Iter<'a> {
