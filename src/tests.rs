@@ -346,6 +346,12 @@ fn truncate_large() {
 }
 
 #[test]
+fn iter_default() {
+    assert!(Iter::default().next().is_none());
+    assert!(Iter::default().next_back().is_none());
+}
+
+#[test]
 fn resize() {
     let mut v = sbvec![false, true, false, false, true];
     v.resize(3, false);

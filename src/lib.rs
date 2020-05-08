@@ -38,6 +38,7 @@ use core::cmp::max;
 use core::fmt;
 use core::hash;
 use core::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
+use core::marker::PhantomData;
 use core::mem::{forget, replace, size_of};
 use core::ops::{Index, Range};
 use core::slice;
@@ -471,6 +472,7 @@ impl SmallBitVec {
         Iter {
             vec: self,
             range: 0..self.len(),
+            phantom: PhantomData,
         }
     }
 
@@ -951,8 +953,19 @@ impl ExactSizeIterator for IntoIter {}
 ///
 /// [1]: struct.SmallBitVec.html#method.iter
 pub struct Iter<'a> {
-    vec: &'a SmallBitVec,
+    vec: *const SmallBitVec, // Always non-null if the range is non-empty
     range: Range<usize>,
+    phantom: PhantomData<&'a SmallBitVec>,
+}
+
+impl<'a> Default for Iter<'a> {
+    fn default() -> Self {
+        Self {
+            vec: core::ptr::null(),
+            range: 0..0,
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -962,7 +975,7 @@ impl<'a> Iterator for Iter<'a> {
     fn next(&mut self) -> Option<bool> {
         self.range
             .next()
-            .map(|i| unsafe { self.vec.get_unchecked(i) })
+            .map(|i| unsafe { (*self.vec).get_unchecked(i) })
     }
 
     #[inline]
@@ -976,7 +989,7 @@ impl<'a> DoubleEndedIterator for Iter<'a> {
     fn next_back(&mut self) -> Option<bool> {
         self.range
             .next_back()
-            .map(|i| unsafe { self.vec.get_unchecked(i) })
+            .map(|i| unsafe { (*self.vec).get_unchecked(i) })
     }
 }
 
@@ -999,6 +1012,7 @@ impl<'a> VecRange<'a> {
         Iter {
             vec: self.vec,
             range: self.range.clone(),
+            phantom: PhantomData,
         }
     }
 }
