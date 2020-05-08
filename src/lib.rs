@@ -967,6 +967,16 @@ pub struct Iter<'a> {
     range: Range<usize>,
 }
 
+impl<'a> Default for Iter<'a> {
+    fn default() -> Self {
+        const EMPTY: &'static SmallBitVec = &SmallBitVec::new();
+        Self {
+            vec: EMPTY,
+            range: 0..0,
+        }
+    }
+}
+
 impl<'a> Iterator for Iter<'a> {
     type Item = bool;
 
