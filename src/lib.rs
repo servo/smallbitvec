@@ -867,9 +867,21 @@ impl Index<usize> for SmallBitVec {
 impl hash::Hash for SmallBitVec {
     #[inline]
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.len().hash(state);
-        for b in self.iter() {
-            b.hash(state);
+        let len = self.len();
+        len.hash(state);
+        if self.is_inline() {
+            (self.data & inline_ones(len)).reverse_bits().hash(state);
+        } else {
+            let full_blocks = len / bits_per_storage();
+            let remainder = len % bits_per_storage();
+            let buffer = self.buffer();
+            if full_blocks != 0 {
+                buffer[..full_blocks].hash(state);
+            }
+            if remainder != 0 {
+                let mask = (1 << remainder) - 1;
+                (buffer[full_blocks] & mask).hash(state);
+            }
         }
     }
 }
