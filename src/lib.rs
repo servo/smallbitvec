@@ -870,7 +870,7 @@ impl hash::Hash for SmallBitVec {
         let len = self.len();
         len.hash(state);
         if self.is_inline() {
-            (self.data & inline_ones(len)).reverse_bits().hash(state);
+            reverse_bits(self.data & inline_ones(len)).hash(state);
         } else {
             let full_blocks = len / bits_per_storage();
             let remainder = len % bits_per_storage();
@@ -1048,4 +1048,14 @@ impl<'a> Index<usize> for VecRange<'a> {
         assert!(vec_i < self.range.end, "index out of range");
         &self.vec[vec_i]
     }
+}
+
+fn reverse_bits(mut value: usize) -> usize {
+    let mut result = 0;
+    for _ in 0..inline_bits() {
+        result <<= 1;
+        result |= value & 1;
+        value >>= 1;
+    }
+    result
 }
