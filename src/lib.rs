@@ -707,7 +707,7 @@ impl SmallBitVec {
         }
     }
 
-    /// If the rightmost bit is set, then we treat it as inline storage.
+    /// If the rightmost bit is unset, then we treat it as inline storage.
     #[inline]
     fn is_inline(&self) -> bool {
         self.data & HEAP_FLAG == 0
