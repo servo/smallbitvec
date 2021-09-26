@@ -1,6 +1,6 @@
 # smallbitvec
 
-A bit vector that is only one word wide, and can store data either inline or
+A bit vector that is the size of a pointer, and can store data either inline or
 on the heap.  Like the `bit-vec` crate but optimized for small inline size and
 reduced allocations.
 
