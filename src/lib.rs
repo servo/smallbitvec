@@ -32,7 +32,7 @@
 
 extern crate alloc;
 
-use alloc::{vec, vec::Vec, boxed::Box};
+use alloc::{boxed::Box, vec, vec::Vec};
 
 use core::cmp::max;
 use core::fmt;
@@ -83,16 +83,15 @@ macro_rules! sbvec {
     );
 }
 
-
 // FIXME: replace this with `debug_assert!` when it’s usable in `const`:
 // * https://github.com/rust-lang/rust/issues/49146
 // * https://github.com/rust-lang/rust/issues/51999
 macro_rules! const_debug_assert_le {
-    ($left: ident <= $right: expr) =>  {
+    ($left: ident <= $right: expr) => {
         #[cfg(debug_assertions)]
         // Causes an `index out of bounds` panic if `$left` is too large
         [(); $right + 1][$left];
-    }
+    };
 }
 
 #[cfg(test)]
@@ -299,7 +298,9 @@ impl SmallBitVec {
     /// Get the last bit in this bit vector.
     #[inline]
     pub fn last(&self) -> Option<bool> {
-        self.len().checked_sub(1).map(|n| unsafe { self.get_unchecked(n) })
+        self.len()
+            .checked_sub(1)
+            .map(|n| unsafe { self.get_unchecked(n) })
     }
 
     /// Get the nth bit in this bit vector, without bounds checks.
@@ -448,7 +449,8 @@ impl SmallBitVec {
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
         let old_cap = self.capacity();
-        let new_cap = self.len()
+        let new_cap = self
+            .len()
             .checked_add(additional)
             .expect("capacity overflow");
         if new_cap <= old_cap {
