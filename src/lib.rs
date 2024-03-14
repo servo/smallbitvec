@@ -37,7 +37,6 @@ use alloc::{vec, vec::Vec, boxed::Box};
 use core::cmp::max;
 use core::fmt;
 use core::hash;
-use core::iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator};
 use core::mem::{forget, replace, size_of};
 use core::ops::{Index, Range};
 use core::slice;

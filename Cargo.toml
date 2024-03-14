@@ -9,6 +9,7 @@ documentation = "https://docs.rs/smallbitvec"
 keywords = ["bitvec", "bitmap", "vec", "data-structures"]
 categories = ["data-structures"]
 readme = "README.md"
+edition = "2021"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }
