@@ -11,5 +11,5 @@ categories = ["data-structures"]
 readme = "README.md"
 
 [dev-dependencies]
-rand = "0.4.2"
+rand = { version = "0.8.5", features = ["small_rng"] }
 bit-vec = "0.6.3"

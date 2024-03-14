@@ -1,4 +1,5 @@
 // Copyright 2012-2014 The Rust Project Developers.
+//
 // Copyright 2017 Matt Brubeck.
 // See the COPYRIGHT file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
@@ -19,15 +20,15 @@ extern crate test;
 use std::hash::{Hash, Hasher};
 
 use bit_vec::BitVec;
-use rand::{weak_rng, Rng, XorShiftRng};
+use rand::{Rng, RngCore, SeedableRng};
 use smallbitvec::SmallBitVec;
 use test::{black_box, Bencher};
 
 const BENCH_BITS: usize = 1 << 14;
 const USIZE_BITS: usize = ::std::mem::size_of::<usize>() * 8;
 
-fn rng() -> XorShiftRng {
-    weak_rng()
+fn rng() -> impl Rng {
+    rand::rngs::SmallRng::seed_from_u64(0)
 }
 
 #[bench]
