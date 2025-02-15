@@ -865,6 +865,17 @@ impl Index<usize> for SmallBitVec {
     }
 }
 
+#[cfg(feature = "malloc_size_of")]
+impl malloc_size_of::MallocSizeOf for SmallBitVec {
+    fn size_of(&self, ops: &mut malloc_size_of::MallocSizeOfOps) -> usize {
+        if let Some(ptr) = self.heap_ptr() {
+            unsafe { ops.malloc_size_of(ptr) }
+        } else {
+            0
+        }
+    }
+}
+
 impl hash::Hash for SmallBitVec {
     #[inline]
     fn hash<H: hash::Hasher>(&self, state: &mut H) {

@@ -1,6 +1,6 @@
 [package]
 name = "smallbitvec"
-version = "2.5.3"
+version = "2.5.4"
 authors = ["Matt Brubeck <mbrubeck@limpet.net>"]
 license = "MIT OR Apache-2.0"
 description = "A bit vector optimized for size and inline storage"
@@ -11,6 +11,9 @@ categories = ["data-structures"]
 readme = "README.md"
 edition = "2021"
 rust-version = "1.56"
+
+[dependencies]
+malloc_size_of = { version = "0.1", default-features = false, optional = true }
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }
