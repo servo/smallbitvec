@@ -32,6 +32,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
 
 [[package]]
+name = "malloc_size_of"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46fd9b382a64a1424df42ce69cd84485336cfeca66795a210ea9bd2fe388a0af"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -69,9 +75,10 @@ dependencies = [
 
 [[package]]
 name = "smallbitvec"
-version = "2.5.3"
+version = "2.5.4"
 dependencies = [
  "bit-vec",
+ "malloc_size_of",
  "rand",
 ]
 
