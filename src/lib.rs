@@ -199,7 +199,10 @@ fn header_len() -> usize {
 /// The minimum number of `Storage` elements to hold at least `cap` bits.
 #[inline(always)]
 fn buffer_len(cap: usize) -> usize {
-    (cap + bits_per_storage() - 1) / bits_per_storage()
+    let bits = bits_per_storage();
+    cap.checked_add(bits - 1)
+        .expect("capacity overflow")
+        / bits
 }
 
 /// A typed representation of a `SmallBitVec`'s internal storage.
@@ -1059,5 +1062,24 @@ impl<'a> Index<usize> for VecRange<'a> {
         let vec_i = i + self.range.start;
         assert!(vec_i < self.range.end, "index out of range");
         &self.vec[vec_i]
+    }
+}
+
+#[cfg(test)]
+mod overflow_tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "capacity overflow")]
+    fn test_poc1_from_elem_overflow() {
+        let _v = SmallBitVec::from_elem(usize::MAX, false);
+    }
+
+    #[test]
+    #[should_panic(expected = "capacity overflow")]
+    fn test_poc2_reserve_overflow() {
+        let mut v = SmallBitVec::new();
+        v.push(true);
+        v.reserve(usize::MAX - 10);
     }
 }
