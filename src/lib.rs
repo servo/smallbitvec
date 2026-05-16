@@ -116,7 +116,7 @@ const fn inline_bits() -> usize {
 /// - The rightmost bit is set to zero to signal an inline vector.
 /// - The position of the rightmost nonzero bit encodes the length.
 #[inline(always)]
-const fn inline_capacity() -> usize {
+pub(crate) const fn inline_capacity() -> usize {
     inline_bits() - 2
 }
 
