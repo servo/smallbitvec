@@ -103,7 +103,7 @@ fn index_out_of_bounds() {
 fn index_out_of_bounds_nonempty() {
     let mut v = SmallBitVec::new();
     v.push(true);
-    v[1 << 32];
+    v[1 << inline_capacity()];
 }
 
 #[test]
